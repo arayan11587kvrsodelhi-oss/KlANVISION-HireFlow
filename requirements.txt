@@ -1,0 +1,34 @@
+# HireFlow Production Dependencies
+# This file specifies the exact pinned versions required for the HireFlow backend.
+# NOTE: Never commit .env files. Keep sensitive values in .env file only.
+
+# === Core Web Framework ===
+fastapi==0.162.5  # FastAPI v0.162.5 - compatible with Python 3.14.7, Pydantic v2
+
+# === Database & ORM ===
+sqlalchemy==2.1.8  # SQLAlchemy 2.1.8 - preserved existing installed version
+alembic==1.20.1  # Alembic 1.20.1 - preserved existing installed version
+
+# === Pydantic v2 ===
+pydantic>=2.9.0,<3.0.0  # Pydantic v2.x for schema validation and DTOs (compatible with fastapi 0.162.5)
+pydantic-settings>=2.2.0,<3.0.0  # Pydantic settings management from environment
+
+# === Authentication & Security ===
+# Password hashing with bcrypt via passlib
+passlib>=1.7.4  # passlib v1.7.4+ with bcrypt support - reproducible constraint
+bcrypt>=4.0.1  # bcrypt v4.0.1+ - reproducible constraint, compatible with Python 3.14.7
+
+# JWT authentication
+pyjwt>=2.8.0,<3.0.0  # PyJWT v2.8.0+ - JWT RFC 7519; cryptography library required as separate dependency
+
+# === Database Driver ===
+psycopg[binary]>=3.1.0  # Psycopg 3 with binary support - PostgreSQL driver
+
+# === Cryptography ===
+cryptography>=42.0.0  # Low-level cryptography - required by PyJWT and JWT operations
+
+# === ASGI Server ===
+uvicorn[standard]>=0.28.0,<1.0.0  # ASGI server, production standard (compatible with Python 3.14)
+
+# === Utilities ===
+python-dotenv>=1.0.0  # Environment variable loading from .env file

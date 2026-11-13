@@ -1,0 +1,488 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Job, Company } from '../../types';
+import { jobService, companyService } from '../../services/api';
+import { formatSalary, formatDate, getWorkplaceBadgeClass } from '../../utils/formatters';
+import { Button } from '../../components/common/Button';
+import { Card, CardContent } from '../../components/common/Card';
+import { NoticeBanner } from '../../components/common/NoticeBanner';
+import {
+  Search,
+  MapPin,
+  Briefcase,
+  ArrowRight,
+  CheckCircle2,
+  Building2,
+  TrendingUp,
+  Shield,
+  Layers,
+  Sparkles,
+  Compass,
+  FileCheck2,
+  Kanban,
+  DollarSign,
+  Users,
+  SlidersHorizontal,
+  Bookmark,
+} from 'lucide-react';
+
+export const LandingPage: React.FC = () => {
+  const [featuredJobs, setFeaturedJobs] = useState<Job[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const [activeTab, setActiveTab] = useState<'candidates' | 'recruiters'>('candidates');
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const allJobs = await jobService.getJobs();
+      setFeaturedJobs(allJobs.slice(0, 4));
+      const allCompanies = await companyService.getCompanies();
+      setCompanies(allCompanies);
+      const saved = await jobService.getSavedJobIds();
+      setSavedJobIds(saved);
+    };
+    fetchData();
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('query', searchQuery.trim());
+    if (searchLocation.trim()) params.set('location', searchLocation.trim());
+    navigate(`/jobs?${params.toString()}`);
+  };
+
+  const handleToggleSave = async (jobId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await jobService.toggleSaveJob(jobId);
+    const updated = await jobService.getSavedJobIds();
+    setSavedJobIds(updated);
+  };
+
+  const popularSearches = [
+    'Frontend Developer',
+    'React Developer',
+    'Python Developer',
+    'Full Stack Developer',
+    'Software Engineer',
+  ];
+
+  return (
+    <div className="space-y-20 pb-20">
+      {/* Hero Section */}
+      <section className="relative pt-8 md:pt-16 px-6 max-w-7xl mx-auto space-y-8">
+        {/* Sample Environment Indicator Banner */}
+        <NoticeBanner
+          badge="Sample Platform Environment"
+          message="HireFlow Enterprise Edition · Live demonstration featuring structured recruitment workflows and sample data."
+        />
+
+        <div className="text-center max-w-3xl mx-auto space-y-6 pt-2">
+          {/* Top category label */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Modern Enterprise Recruitment Platform</span>
+          </div>
+
+          {/* Primary Headline */}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+            Find the Right Opportunity. Build Your Future.
+          </h1>
+
+          {/* Subtitle & Value Proposition */}
+          <div className="space-y-3 max-w-2xl mx-auto">
+            <p className="text-slate-300 text-base md:text-lg leading-relaxed font-medium">
+              HireFlow connects job seekers with companies through a transparent, organized recruitment platform.
+            </p>
+            <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
+              Discover opportunities, showcase your skills, apply for positions and track your applications. Employers can publish openings, discover candidates and manage their recruitment pipeline in one place.
+            </p>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex items-center justify-center gap-3 pt-1">
+            <Link to="/jobs">
+              <Button variant="primary" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                Explore Jobs
+              </Button>
+            </Link>
+            <Link to="/recruiter">
+              <Button variant="secondary" size="md" leftIcon={<Users className="w-4 h-4" />}>
+                Find Talent
+              </Button>
+            </Link>
+          </div>
+
+          {/* Primary Search Container - Linear/Stripe high-density interaction */}
+          <div className="p-2 md:p-3 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-w-3xl mx-auto mt-4 text-left">
+            <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row items-center gap-2">
+              <div className="flex items-center gap-3 px-3.5 py-2.5 flex-1 w-full bg-slate-950/80 rounded-xl border border-slate-800/90 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Job title, technical skill, or keyword..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent text-slate-100 placeholder-slate-400 text-xs md:text-sm focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 px-3.5 py-2.5 md:w-60 w-full bg-slate-950/80 rounded-xl border border-slate-800/90 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Location or 'Remote'..."
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
+                  className="w-full bg-transparent text-slate-100 placeholder-slate-400 text-xs md:text-sm focus:outline-none"
+                />
+              </div>
+
+              <Button type="submit" variant="primary" size="md" className="w-full md:w-auto h-10 px-5">
+                <span>Search Openings</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </form>
+          </div>
+
+          {/* Popular Searches Row */}
+          <div className="flex items-center justify-center gap-2 flex-wrap text-xs text-slate-400 pt-2">
+            <span className="font-semibold text-slate-300">Popular searches:</span>
+            {popularSearches.map((tag, idx) => (
+              <React.Fragment key={tag}>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/jobs?query=${encodeURIComponent(tag)}`)}
+                  className="text-slate-300 hover:text-blue-400 transition-colors font-medium hover:underline cursor-pointer"
+                >
+                  {tag}
+                </button>
+                {idx < popularSearches.length - 1 && (
+                  <span aria-hidden="true" className="text-slate-600">·</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        {/* Realistic Platform Capabilities Strip (No fabricated real-world claims) */}
+        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-900/50 border border-slate-800/80 rounded-xl">
+          <div className="text-center md:border-r border-slate-800/80 p-2 space-y-1">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Application Flow</div>
+            <div className="text-sm font-bold text-white font-mono">4-Stage Pipeline</div>
+            <div className="text-[11px] text-slate-400">Applied to Offer</div>
+          </div>
+          <div className="text-center md:border-r border-slate-800/80 p-2 space-y-1">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Compensation Model</div>
+            <div className="text-sm font-bold text-emerald-400 font-mono">Standardized Bands</div>
+            <div className="text-[11px] text-slate-400">Disclosed on every role</div>
+          </div>
+          <div className="text-center md:border-r border-slate-800/80 p-2 space-y-1">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Workplace Types</div>
+            <div className="text-sm font-bold text-white font-mono">Remote · Hybrid · On-Site</div>
+            <div className="text-[11px] text-slate-400">Multi-facet filtering</div>
+          </div>
+          <div className="text-center p-2 space-y-1">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Backend Integration</div>
+            <div className="text-sm font-bold text-blue-400 font-mono">FastAPI Modular</div>
+            <div className="text-[11px] text-slate-400">OpenAPI 3.1 compliant</div>
+          </div>
+        </div>
+      </section>
+
+      {/* A Better Way to Connect Talent with Opportunity Section */}
+      <section className="px-6 max-w-7xl mx-auto space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
+            Platform Capabilities
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+            A Better Way to Connect Talent with Opportunity
+          </h2>
+          <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
+            Designed to replace clunky legacy ATS systems with transparent, structured workflows.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Pillar 1 */}
+          <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 w-fit">
+              <Compass className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-white">Discover Opportunities</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Search jobs by title, skills, company, location and work mode with multi-faceted filtering.
+            </p>
+          </div>
+
+          {/* Pillar 2 */}
+          <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit">
+              <FileCheck2 className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-white">Track Applications</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Follow your application from submission through screening, interview and final decision in real-time.
+            </p>
+          </div>
+
+          {/* Pillar 3 */}
+          <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 w-fit">
+              <Kanban className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-white">Manage Recruitment</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Employers can publish jobs, review applications and manage candidate pipelines in one place.
+            </p>
+          </div>
+
+          {/* Pillar 4 */}
+          <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 w-fit">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-white">Transparent Listings</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              View available salary information, job requirements and employment details before applying.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Openings Section */}
+      <section className="px-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Sample Openings
+            </div>
+            <h2 className="text-2xl font-bold text-white tracking-tight">Featured Opportunities</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Sample job listings illustrating verified compensation, requirement breakdowns, and direct apply flows.
+            </p>
+          </div>
+          <Link
+            to="/jobs"
+            className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 group"
+          >
+            <span>View all positions</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {featuredJobs.map((job) => {
+            const isSaved = savedJobIds.includes(job.id);
+            return (
+              <div
+                key={job.id}
+                className="p-5 bg-slate-900/70 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors flex flex-col justify-between group shadow-sm"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm md:text-base font-semibold text-white group-hover:text-blue-400 transition-colors">
+                        <Link to={`/jobs/${job.id}`}>{job.title}</Link>
+                      </h3>
+                      <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                        <span className="text-slate-300 font-medium">{job.companyName}</span>
+                        <span>·</span>
+                        <span>{job.location}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded border ${getWorkplaceBadgeClass(
+                          job.workplaceType
+                        )}`}
+                      >
+                        {job.workplaceType}
+                      </span>
+                      <button
+                        onClick={(e) => handleToggleSave(job.id, e)}
+                        className={`p-1.5 rounded-lg border transition-colors ${
+                          isSaved
+                            ? 'bg-blue-600/20 border-blue-500/50 text-blue-400'
+                            : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:text-white'
+                        }`}
+                        title={isSaved ? 'Remove from saved' : 'Save job'}
+                      >
+                        <Bookmark className="w-3.5 h-3.5 fill-current" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                    {job.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {job.requirements.slice(0, 3).map((req, i) => (
+                      <span
+                        key={i}
+                        className="text-[11px] text-slate-300 bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded"
+                      >
+                        {req.split(' ').slice(0, 3).join(' ')}...
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-mono font-medium text-slate-200 tabular-nums">
+                      {formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency)}
+                    </div>
+                    <div className="text-[10px] text-slate-400">Annual Base</div>
+                  </div>
+
+                  <Link
+                    to={`/jobs/${job.id}`}
+                    className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    <span>View Position</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Dual Value Proposition Section (Interactive Tabs) */}
+      <section className="px-6 max-w-7xl mx-auto">
+        <div className="p-6 md:p-10 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-6">
+          <div className="max-w-2xl space-y-2">
+            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+              Enterprise Workflows for Candidates & Hiring Teams
+            </h2>
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
+              Compare candidate discovery with employer pipeline management.
+            </p>
+          </div>
+
+          {/* Segmented Tab Buttons */}
+          <div className="flex items-center gap-1 p-1 bg-slate-950/80 border border-slate-800 rounded-lg max-w-sm">
+            <button
+              onClick={() => setActiveTab('candidates')}
+              className={`flex-1 px-4 py-2 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                activeTab === 'candidates'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              For Job Seekers
+            </button>
+            <button
+              onClick={() => setActiveTab('recruiters')}
+              className={`flex-1 px-4 py-2 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                activeTab === 'recruiters'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              For Hiring Teams
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'candidates' ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+              <div className="p-5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+                <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 w-fit">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Full Salary Transparency</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Every position outlines clear salary ranges and role specifications up front.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 w-fit">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Application Tracking</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Track stages from initial submission to interview scheduling and offer notices.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400 w-fit">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Profile Dossier</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Keep your technical experience, skills, and resume document organized in one place.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+              <div className="p-5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+                <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 w-fit">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Stage Pipeline Kanban</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Transition candidates through screening, technical review, and offer status.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 w-fit">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">Job Management</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Draft, publish, and update requisitions with structured criteria.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+                <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400 w-fit">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-semibold text-white">FastAPI Ready</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Pre-configured typed API service layer for effortless backend connectivity.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Verified Employers Strip */}
+      <section className="px-6 max-w-7xl mx-auto space-y-4">
+        <div className="text-xs uppercase font-mono tracking-wider text-slate-400 text-center">
+          Featured Sample Employers
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {companies.map((comp) => (
+            <div
+              key={comp.id}
+              className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 flex items-center justify-between"
+            >
+              <div>
+                <div className="text-xs font-semibold text-slate-200">{comp.name}</div>
+                <div className="text-[11px] text-slate-400">{comp.industry}</div>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                {comp.openJobsCount} Open
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};

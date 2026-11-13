@@ -1,0 +1,227 @@
+import React, { useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { QuickRoleSwitcher } from '../components/common/QuickRoleSwitcher';
+import { getInitials } from '../utils/formatters';
+import {
+  LayoutDashboard,
+  User,
+  GraduationCap,
+  FileText,
+  Send,
+  Bookmark,
+  Briefcase,
+  PlusCircle,
+  Users,
+  Building2,
+  ShieldCheck,
+  CheckSquare,
+  LogOut,
+  Menu,
+  X,
+  Compass,
+  ExternalLink,
+} from 'lucide-react';
+
+export const DashboardLayout: React.FC = () => {
+  const { user, role, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  // Build role-specific navigation items
+  const candidateNav = [
+    { label: 'Overview', path: '/candidate', icon: LayoutDashboard },
+    { label: 'Profile Information', path: '/candidate/profile', icon: User },
+    { label: 'Skills & Experience', path: '/candidate/skills', icon: GraduationCap },
+    { label: 'Resume & Documents', path: '/candidate/resume', icon: FileText },
+    { label: 'My Applications', path: '/candidate/applications', icon: Send },
+    { label: 'Saved Jobs', path: '/candidate/saved', icon: Bookmark },
+  ];
+
+  const recruiterNav = [
+    { label: 'Talent Overview', path: '/recruiter', icon: LayoutDashboard },
+    { label: 'Job Postings', path: '/recruiter/jobs', icon: Briefcase },
+    { label: 'Post New Job', path: '/recruiter/jobs/new', icon: PlusCircle },
+    { label: 'Applicants Pipeline', path: '/recruiter/applicants', icon: Users },
+    { label: 'Company Profile', path: '/recruiter/company', icon: Building2 },
+  ];
+
+  const adminNav = [
+    { label: 'System Overview', path: '/admin', icon: LayoutDashboard },
+    { label: 'Candidate Directory', path: '/admin/candidates', icon: Users },
+    { label: 'Company Governance', path: '/admin/companies', icon: Building2 },
+    { label: 'Job Moderation', path: '/admin/jobs', icon: CheckSquare },
+  ];
+
+  let currentNav = candidateNav;
+  let roleTitle = 'Candidate Portal';
+  let badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+
+  if (role === 'recruiter') {
+    currentNav = recruiterNav;
+    roleTitle = 'Employer Workspace';
+    badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+  } else if (role === 'admin') {
+    currentNav = adminNav;
+    roleTitle = 'Platform Administration';
+    badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+  }
+
+  // Generate breadcrumb text
+  const currentPathSegment = location.pathname.split('/').filter(Boolean).pop() || '';
+  const currentNavMatch = currentNav.find((n) => n.path === location.pathname);
+  const pageTitle = currentNavMatch?.label || currentPathSegment.replace('-', ' ');
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row antialiased">
+      {/* Mobile Top bar */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 z-30">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+            <Briefcase className="w-4 h-4" />
+          </div>
+          <span className="font-bold text-white text-base">HireFlow</span>
+          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border uppercase ${badgeColor}`}>
+            {role}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <QuickRoleSwitcher />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800"
+            aria-label="Toggle navigation"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar / Mobile Drawer */}
+      <aside
+        className={`fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-slate-900/95 backdrop-blur-md border-r border-slate-800/80 flex flex-col transition-transform duration-200 md:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Brand Header */}
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:bg-blue-500 transition-colors">
+              <Briefcase className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <div className="font-bold text-base text-white tracking-tight leading-none">HireFlow</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{roleTitle}</div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Navigation List */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          <div className="px-3 pb-2 text-[10px] font-semibold text-slate-300 uppercase tracking-wider">
+            Navigation
+          </div>
+          {currentNav.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <span className="truncate">{item.label}</span>
+              </NavLink>
+            );
+          })}
+
+          <div className="pt-4 px-3 pb-2 text-[10px] font-semibold text-slate-300 uppercase tracking-wider">
+            Public Board
+          </div>
+          <Link
+            to="/jobs"
+            className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Compass className="w-4 h-4 text-slate-400" />
+              <span>Explore Public Jobs</span>
+            </div>
+            <ExternalLink className="w-3 h-3 text-slate-400" />
+          </Link>
+        </div>
+
+        {/* User Card & Logout */}
+        <div className="p-3 border-t border-slate-800 bg-slate-900/60">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-blue-700 text-white font-semibold text-xs flex items-center justify-center shrink-0">
+                {getInitials(user?.name || 'Alex')}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-200 truncate">{user?.name || 'User'}</p>
+                <p className="text-[11px] text-slate-400 truncate capitalize">{role}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-md transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Workspace Frame */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Workspace Top Header */}
+        <header className="sticky top-0 z-20 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-6 py-3 hidden md:flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span>HireFlow</span>
+            <span>/</span>
+            <span className="capitalize">{role}</span>
+            <span>/</span>
+            <span className="text-slate-100 font-semibold capitalize">{pageTitle}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <QuickRoleSwitcher />
+            <Link
+              to="/jobs"
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800/70 transition-colors"
+            >
+              <span>Public Board</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </header>
+
+        {/* Content Viewport */}
+        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+          <Outlet />
+        </main>
+      </div>
+
+      {/* Mobile Drawer backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+    </div>
+  );
+};

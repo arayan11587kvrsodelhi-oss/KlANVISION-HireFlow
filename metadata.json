@@ -1,0 +1,8 @@
+{
+  "name": "HireFlow",
+  "description": "Enterprise Job Portal & Recruitment Management System for candidates, recruiters, and administrators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
