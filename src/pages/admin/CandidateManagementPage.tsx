@@ -1,97 +1,67 @@
-import React, { useState } from 'react';
-import { getInitials } from '../../utils/formatters';
+import React, { useCallback, useEffect, useState } from 'react';
+import { getInitials, formatDate } from '../../utils/formatters';
+import { adminService, AdminCandidateRow } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { NoticeBanner } from '../../components/common/NoticeBanner';
-import { Users, Search, Shield, CheckCircle, Ban, Eye } from 'lucide-react';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Users, Search, Eye } from 'lucide-react';
 
-interface AdminCandidate {
-  id: string;
-  name: string;
-  email: string;
-  headline: string;
-  location: string;
-  skills: string[];
-  applicationsCount: number;
-  status: 'active' | 'suspended';
-  registeredDate: string;
-}
+type AdminCandidate = AdminCandidateRow;
 
-const INITIAL_CANDIDATES: AdminCandidate[] = [
-  {
-    id: 'cand-alex',
-    name: 'Alex Morgan',
-    email: 'alex.morgan@example.com',
-    headline: 'Staff Frontend Engineer & Design Systems Specialist',
-    location: 'San Francisco, CA',
-    skills: ['React', 'TypeScript', 'Design Systems', 'WebSockets'],
-    applicationsCount: 2,
-    status: 'active',
-    registeredDate: '2026-01-15',
-  },
-  {
-    id: 'cand-jordan',
-    name: 'Dr. Jordan Hayes',
-    email: 'jordan.hayes@example.org',
-    headline: 'CUDA Kernel & Inference Acceleration Researcher',
-    location: 'New York, NY',
-    skills: ['PyTorch', 'CUDA', 'Triton', 'C++'],
-    applicationsCount: 1,
-    status: 'active',
-    registeredDate: '2026-02-10',
-  },
-  {
-    id: 'cand-elena',
-    name: 'Elena Rostova',
-    email: 'elena.rostova@example.com',
-    headline: 'Lead WebGL & Visualization Engineer',
-    location: 'San Francisco, CA',
-    skills: ['WebGL', 'Three.js', 'TypeScript', 'GLSL'],
-    applicationsCount: 1,
-    status: 'active',
-    registeredDate: '2026-03-01',
-  },
-  {
-    id: 'cand-marcus',
-    name: 'Marcus Wright',
-    email: 'marcus.w@example.com',
-    headline: 'Senior Technical Product Manager',
-    location: 'San Francisco, CA',
-    skills: ['Developer Experience', 'API Design', 'Telemetry'],
-    applicationsCount: 1,
-    status: 'active',
-    registeredDate: '2026-02-18',
-  },
-  {
-    id: 'cand-liam',
-    name: 'Liam O’Connor',
-    email: 'liam.oc@example.com',
-    headline: 'Rust & Distributed Consensus Architect',
-    location: 'Seattle, WA',
-    skills: ['Rust', 'Raft', 'eBPF', 'Kubernetes'],
-    applicationsCount: 1,
-    status: 'active',
-    registeredDate: '2026-03-12',
-  },
-];
-
+/**
+ * Candidate account directory, backed by `GET /admin/candidates`.
+ *
+ * This page previously rendered five invented candidates held in a constant.
+ * The admin role governs accounts (activate/suspend) and deliberately does not
+ * receive candidate phone numbers, resumes or application contents.
+ */
 export const CandidateManagementPage: React.FC = () => {
-  const [candidates, setCandidates] = useState<AdminCandidate[]>(INITIAL_CANDIDATES);
+  const [candidates, setCandidates] = useState<AdminCandidate[]>([]);
   const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<AdminCandidate | null>(null);
   const [candidateToToggle, setCandidateToToggle] = useState<AdminCandidate | null>(null);
 
-  const handleConfirmToggle = () => {
+  const loadCandidates = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      setCandidates(await adminService.getCandidates());
+    } catch (err) {
+      console.error('Failed to load candidates', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load the candidate directory.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCandidates();
+  }, [loadCandidates]);
+
+  const handleConfirmToggle = async () => {
     if (!candidateToToggle) return;
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.id === candidateToToggle.id
-          ? { ...c, status: c.status === 'active' ? 'suspended' : 'active' }
-          : c
-      )
-    );
-    setCandidateToToggle(null);
+    const nextActive = candidateToToggle.status !== 'active';
+    setIsSaving(true);
+    setErrorMessage(null);
+    try {
+      await adminService.setCandidateActive(candidateToToggle.id, nextActive);
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === candidateToToggle.id ? { ...c, status: nextActive ? 'active' : 'suspended' } : c
+        )
+      );
+      setCandidateToToggle(null);
+    } catch (err) {
+      console.error('Failed to update candidate status', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update the account status.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const filtered = candidates.filter(
@@ -133,7 +103,32 @@ export const CandidateManagementPage: React.FC = () => {
         />
       </div>
 
+      {errorMessage && (
+        <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Table */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-16 bg-slate-900 border border-slate-800 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title={candidates.length === 0 ? 'No candidate accounts yet' : 'No candidates match your search'}
+          description={
+            candidates.length === 0
+              ? 'Candidate accounts appear here as soon as people register.'
+              : 'Try a different name, email address or skill keyword.'
+          }
+          actionLabel={candidates.length === 0 ? undefined : 'Clear search'}
+          onAction={candidates.length === 0 ? undefined : () => setQuery('')}
+        />
+      ) : (
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -215,6 +210,7 @@ export const CandidateManagementPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
 
       {/* Details Modal */}
       {selectedCandidate && (
@@ -237,7 +233,17 @@ export const CandidateManagementPage: React.FC = () => {
               </div>
               <div>
                 <span className="text-slate-400 block text-[11px]">Location</span>
-                <span className="text-white">{selectedCandidate.location}</span>
+                <span className="text-white">{selectedCandidate.location || 'Not provided'}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+              <div>
+                <span className="text-slate-400 block text-[11px]">Registered</span>
+                <span className="text-white">{formatDate(selectedCandidate.registeredDate)}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[11px]">Applications submitted</span>
+                <span className="text-white font-mono">{selectedCandidate.applicationsCount}</span>
               </div>
             </div>
             <div className="pt-2 border-t border-slate-800">
@@ -272,6 +278,7 @@ export const CandidateManagementPage: React.FC = () => {
         }
         confirmLabel={candidateToToggle?.status === 'active' ? 'Suspend Account' : 'Activate Account'}
         variant={candidateToToggle?.status === 'active' ? 'danger' : 'primary'}
+        isLoading={isSaving}
       />
     </div>
   );

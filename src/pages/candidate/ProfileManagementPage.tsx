@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { profileService } from '../../services/api';
 import { Button } from '../../components/common/Button';
-import { User, Mail, Phone, MapPin, Globe, Github, Linkedin, Check } from 'lucide-react';
+import { Globe, Github, Linkedin, Check, AlertCircle } from 'lucide-react';
 
 export const ProfileManagementPage: React.FC = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { profile } = useAuth();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -21,6 +21,7 @@ export const ProfileManagementPage: React.FC = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -41,14 +42,27 @@ export const ProfileManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    setErrorMessage(null);
     try {
-      const candidateId = profile?.id || user?.id || '';
-      await profileService.updateProfile(candidateId, formData);
-      await refreshProfile();
+      // The server derives the profile owner from the access token; no id is sent.
+      const updated = await profileService.updateProfile(formData);
+      setFormData({
+        fullName: updated.fullName,
+        headline: updated.headline,
+        email: updated.email,
+        phone: updated.phone,
+        location: updated.location,
+        bio: updated.bio,
+        website: updated.website,
+        github: updated.github,
+        linkedin: updated.linkedin,
+      });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
     } catch (err) {
       console.error('Failed to update profile', err);
+      const apiError = err as { firstFieldError?: string; message?: string };
+      setErrorMessage(apiError.firstFieldError ?? apiError.message ?? 'Failed to save your profile.');
     } finally {
       setIsSaving(false);
     }
@@ -107,12 +121,14 @@ export const ProfileManagementPage: React.FC = () => {
                 Email Address
               </label>
               <div className="relative">
+                {/* Email is the account identifier: changed through a verified
+                    flow, not by editing this form, so it is read-only here. */}
                 <input
                   type="email"
-                  required
+                  readOnly
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  title="Contact support to change your account email"
+                  className="w-full bg-slate-900/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-400 cursor-not-allowed focus:outline-none"
                 />
               </div>
             </div>
@@ -216,6 +232,12 @@ export const ProfileManagementPage: React.FC = () => {
         {/* Footer actions */}
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
           <div className="text-xs text-slate-400">
+            {errorMessage && (
+              <span className="inline-flex items-center gap-1.5 text-rose-400 font-medium">
+                <AlertCircle className="w-4 h-4" />
+                {errorMessage}
+              </span>
+            )}
             {saveSuccess && (
               <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium">
                 <Check className="w-4 h-4" />

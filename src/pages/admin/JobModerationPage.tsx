@@ -14,6 +14,7 @@ export const JobModerationPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchJobs = async () => {
     setIsLoading(true);
@@ -32,17 +33,23 @@ export const JobModerationPage: React.FC = () => {
   }, []);
 
   const handleStatusChange = async (jobId: string, newStatus: JobStatus) => {
-    await jobService.updateJob(jobId, { status: newStatus });
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
-    );
+    try {
+      const updated = await jobService.updateJob(jobId, { status: newStatus });
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? updated : j)));
+    } catch (err) {
+      console.error('Failed to change job status', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to change the job status.');
+    }
   };
 
   const handleToggleFeatured = async (jobId: string, currentFeatured: boolean) => {
-    await jobService.updateJob(jobId, { featured: !currentFeatured });
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, featured: !currentFeatured } : j))
-    );
+    try {
+      const updated = await jobService.setFeatured(jobId, !currentFeatured);
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? updated : j)));
+    } catch (err) {
+      console.error('Failed to update featured flag', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update the featured flag.');
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -54,6 +61,7 @@ export const JobModerationPage: React.FC = () => {
       setJobToDelete(null);
     } catch (err) {
       console.error('Failed to delete job', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to delete the job.');
     } finally {
       setIsDeleting(false);
     }
@@ -72,6 +80,7 @@ export const JobModerationPage: React.FC = () => {
         badge="Platform Governance"
         message="Job Moderation Console · Audit requisitions across all registered employers."
       />
+      {errorMessage && <NoticeBanner badge="ERROR" message={errorMessage} />}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

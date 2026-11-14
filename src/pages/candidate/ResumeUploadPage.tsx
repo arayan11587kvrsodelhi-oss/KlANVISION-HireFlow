@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { profileService, resumeSession } from '../../services/api';
+import { profileService } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { NoticeBanner } from '../../components/common/NoticeBanner';
 import { formatDate } from '../../utils/formatters';
@@ -16,24 +16,30 @@ import {
   FileCheck,
 } from 'lucide-react';
 
+const MAX_RESUME_BYTES = 10 * 1024 * 1024;
+const ALLOWED_EXTENSIONS = ['.pdf', '.docx'];
+
+/** Fast client-side feedback; the server re-validates type and size regardless. */
+function preValidate(file: File): string | null {
+  const name = file.name.toLowerCase();
+  const extension = name.slice(name.lastIndexOf('.'));
+  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+    return `Unsupported file type "${extension || 'unknown'}". Upload a PDF or DOCX file.`;
+  }
+  if (file.size > MAX_RESUME_BYTES) {
+    return `File is ${(file.size / 1024 / 1024).toFixed(1)} MB; the limit is 10 MB.`;
+  }
+  if (file.size === 0) return 'The selected file is empty.';
+  return null;
+}
+
 export const ResumeUploadPage: React.FC = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const candidateId = profile?.id ?? user?.id;
-if (!candidateId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Candidate Identity"
-        message="Your candidate profile could not be loaded. Please complete your profile or contact your administrator before uploading a resume."
-      />
-    </div>
-  );
-}
 
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -52,49 +58,43 @@ if (!candidateId) {
   };
 
   const processUpload = async (file: File) => {
+    const problem = preValidate(file);
+    if (problem) {
+      setUploadError(problem);
+      return;
+    }
     setIsUploading(true);
     setUploadError(null);
     try {
-      if (!candidateId) {
-        throw new Error('No candidate identity available. Please sign in as a candidate first.');
-      }
-      await profileService.uploadResume(candidateId, file);
+      await profileService.uploadResume(file);
       await refreshProfile();
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to upload resume.';
-      setUploadError(message);
       console.error('Failed to upload resume', err);
+      const apiError = err as { firstFieldError?: string; message?: string };
+      setUploadError(apiError.firstFieldError ?? apiError.message ?? 'Failed to upload resume.');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleDownload = () => {
-    if (!profile?.resume?.previewUrl) return;
-    const sessionFile = resumeSession.getResume(profile.resume.previewUrl);
-    if (!sessionFile) {
-      const element = document.createElement('a');
-      const file = new Blob(
-        ['HIREFLOW APPLICANT DOSSIER\n\nName: ' + profile.fullName + '\nHeadline: ' + profile.headline + '\nEmail: ' + profile.email + '\nPhone: ' + profile.phone + '\nLocation: ' + profile.location + '\n\nTechnical Skills: ' + profile.skills.join(', ') + '\n'],
-        { type: 'text/plain' }
-      );
-      element.href = URL.createObjectURL(file);
-      element.download = profile.resume.fileName.replace(/\.pdf$/i, '.txt') || 'Resume_Dossier.txt';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      return;
+  const handleDownload = async () => {
+    const downloadUrl = profile?.resume?.downloadUrl;
+    if (!downloadUrl || !profile?.resume) return;
+    setIsDownloading(true);
+    setUploadError(null);
+    try {
+      // Streams the stored file through the authenticated API. If the file is
+      // gone the request fails and we say so - we never synthesise a substitute.
+      await profileService.downloadResume(downloadUrl, profile.resume.fileName);
+    } catch (err) {
+      console.error('Failed to download resume', err);
+      const apiError = err as { message?: string };
+      setUploadError(apiError.message ?? 'Could not download the stored resume file.');
+    } finally {
+      setIsDownloading(false);
     }
-    const element = document.createElement('a');
-    const url = URL.createObjectURL(sessionFile.blob);
-    element.href = url;
-    element.download = sessionFile.file.name;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -145,7 +145,7 @@ if (!candidateId) {
             <input
               id="resume-file-input"
               type="file"
-              accept=".pdf,.docx,.doc"
+              accept=".pdf,.docx"
               onChange={handleFileInput}
               className="hidden"
             />
@@ -169,11 +169,12 @@ if (!candidateId) {
             </div>
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
+              disabled={isDownloading || !profile.resume.downloadUrl}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors disabled:opacity-50"
               title="Download your resume"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download Resume</span>
+              <span>{isDownloading ? 'Downloading…' : 'Download Resume'}</span>
             </button>
           </div>
 
@@ -213,18 +214,20 @@ if (!candidateId) {
         <div className="p-8 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-sans space-y-6 shadow-inner">
           <div className="border-b border-slate-800 pb-4 flex flex-col md:flex-row justify-between md:items-end gap-2">
             <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">{profile?.fullName || 'Alex Morgan'}</h2>
-              <p className="text-xs text-blue-400 font-medium mt-0.5">{profile?.headline || 'Staff Frontend Engineer & Design Systems Specialist'}</p>
+              <h2 className="text-xl font-bold text-white tracking-tight">{profile?.fullName || 'Your name'}</h2>
+              <p className="text-xs text-blue-400 font-medium mt-0.5">{profile?.headline || 'Add a professional headline'}</p>
             </div>
             <div className="text-xs text-slate-400 text-left md:text-right font-mono">
-              <div>{profile?.email || 'alex.morgan@example.com'}</div>
-              <div>{profile?.location || 'San Francisco, CA'}</div>
+              <div>{profile?.email}</div>
+              <div>{profile?.location}</div>
             </div>
           </div>
 
           <div className="space-y-2 text-xs">
             <h3 className="font-semibold text-slate-100 uppercase tracking-wider text-[11px] border-b border-slate-800/80 pb-1">Executive Summary</h3>
-            <p className="leading-relaxed text-slate-300">{profile?.bio || 'Seasoned staff engineer with deep expertise in frontend architecture, type safety, and real-time visualization pipelines.'}</p>
+            <p className="leading-relaxed text-slate-300">
+              {profile?.bio || 'Add a professional summary on the Profile page to include it here.'}
+            </p>
           </div>
 
           <div className="space-y-3 text-xs">

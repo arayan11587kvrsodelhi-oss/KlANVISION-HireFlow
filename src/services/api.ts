@@ -1,451 +1,360 @@
+/**
+ * Typed service layer over the HireFlow FastAPI backend.
+ *
+ * Every function here performs a real HTTP request. There is no localStorage
+ * persistence and no mock data: the browser holds no business state beyond the
+ * in-memory access token managed by `http.ts`.
+ *
+ * DTO mapping happens in this file (`mapJob`, `mapApplication`, ...) so that
+ * pages keep working with the existing camelCase view models.
+ */
+
 import {
-  Job,
-  JobFilterParams,
   Application,
   ApplicationStatus,
+  AdminMetrics,
+  ApiAdminCandidate,
+  ApiApplication,
+  ApiCandidateProfile,
+  ApiCompany,
+  ApiJob,
+  ApiResume,
+  AuthToken,
   CandidateProfile,
   Company,
-  AdminMetrics,
+  Education,
+  Job,
+  JobFilterParams,
+  JobInput,
+  MeResponse,
+  Page,
+  RegisterPayload,
   User,
   UserRole,
+  WorkExperience,
 } from '../types';
-import {
-  INITIAL_JOBS,
-  INITIAL_COMPANIES,
-  INITIAL_APPLICATIONS,
-  DEMO_USERS,
-} from '../data/mockData';
+import { ApiError, downloadAuthenticated, http, setAccessToken } from './http';
 
-const STORAGE_KEYS = {
-  JOBS: 'hireflow_jobs_v1',
-  COMPANIES: 'hireflow_companies_v1',
-  APPLICATIONS: 'hireflow_applications_v1',
-  CURRENT_USER: 'hireflow_current_user_v1',
-} as const;
+export { ApiError } from './http';
 
-export class StorageError extends Error {
-  public readonly key: string;
-  public readonly original?: Error;
-  constructor(key: string, message: string, original?: Error) {
-    super(`Storage error for key "${key}": ${message}`);
-    this.name = 'StorageError';
-    this.key = key;
-    this.original = original;
-  }
+/* ------------------------------------------------------------------ */
+/* Mappers (API snake_case -> view camelCase)                          */
+/* ------------------------------------------------------------------ */
+
+const PLACEHOLDER_LOGO =
+  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=80';
+
+export function mapJob(api: ApiJob): Job {
+  return {
+    id: api.id,
+    title: api.title,
+    companyId: api.company_id,
+    companyName: api.company_name,
+    companyLogo: api.company_logo ?? PLACEHOLDER_LOGO,
+    location: api.location ?? '',
+    workplaceType: api.workplace_type,
+    jobType: api.job_type,
+    experienceLevel: api.experience_level,
+    salaryMin: api.salary_min,
+    salaryMax: api.salary_max,
+    salaryCurrency: api.salary_currency,
+    department: api.department ?? '',
+    description: api.description,
+    responsibilities: api.responsibilities,
+    requirements: api.requirements,
+    benefits: api.benefits,
+    postedDate: api.posted_date,
+    status: api.status,
+    applicantsCount: api.applicants_count,
+    featured: api.featured,
+  };
 }
 
-function getStorageItem<T>(key: string, defaultValue: T): T {
-  try {
-    const item = localStorage.getItem(key);
-    if (item === null) return defaultValue;
-    return JSON.parse(item) as T;
-  } catch (err) {
-    const original = err instanceof Error ? err : new Error(String(err));
-    console.error(`Failed to read localStorage key "${key}"`, original);
-    return defaultValue;
-  }
+export function mapJobInput(input: JobInput): Record<string, unknown> {
+  return {
+    title: input.title,
+    department: input.department ?? null,
+    location: input.location ?? null,
+    workplace_type: input.workplace_type,
+    job_type: input.job_type,
+    experience_level: input.experience_level,
+    salary_min: input.salary_min,
+    salary_max: input.salary_max,
+    salary_currency: input.salary_currency ?? 'USD',
+    description: input.description,
+    responsibilities: input.responsibilities ?? [],
+    requirements: input.requirements ?? [],
+    benefits: input.benefits ?? [],
+    ...(input.status ? { status: input.status } : {}),
+  };
 }
 
-function setStorageItem<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    const original = err instanceof Error ? err : new Error(String(err));
-    throw new StorageError(key, 'failed to write data to localStorage', original);
-  }
+export function mapCompany(api: ApiCompany): Company {
+  return {
+    id: api.id,
+    name: api.name,
+    logo: api.logo ?? PLACEHOLDER_LOGO,
+    industry: api.industry ?? '',
+    location: api.location ?? '',
+    website: api.website ?? '',
+    employeeCount: api.employee_count ?? '',
+    description: api.description ?? '',
+    verified: api.is_verified,
+    openJobsCount: api.open_jobs_count,
+  };
 }
 
-function removeStorageItem(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch (err) {
-    const original = err instanceof Error ? err : new Error(String(err));
-    throw new StorageError(key, 'failed to remove data from localStorage', original);
-  }
+export function mapApplication(api: ApiApplication): Application {
+  return {
+    id: api.id,
+    jobId: api.job_id,
+    jobTitle: api.job_title,
+    companyId: api.company_id,
+    companyName: api.company_name,
+    companyLogo: api.company_logo ?? PLACEHOLDER_LOGO,
+    candidateId: api.candidate_id,
+    candidateName: api.candidate_name,
+    candidateEmail: api.candidate_email,
+    candidatePhone: api.candidate_phone ?? '',
+    candidateHeadline: api.candidate_headline ?? '',
+    resumeFileName: api.resume_file_name ?? '',
+    resumeSize: api.resume_size ?? '',
+    resumeUrl: api.resume_download_url ?? undefined,
+    coverLetter: api.cover_letter ?? '',
+    appliedDate: api.applied_date,
+    status: api.status,
+    stageUpdatedAt: api.stage_updated_at,
+    notes: api.notes ?? undefined,
+    rating: api.rating ?? undefined,
+  };
 }
 
-const delay = (ms: number = 120) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Helper to resolve the current demo candidate id.
- */
-function getCurrentCandidateId(): string | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (!stored) return null;
-    const user = JSON.parse(stored) as User | null;
-    if (!user || user.role !== 'candidate') return null;
-    return user.id;
-  } catch {
-    return null;
-  }
+export function mapMe(me: MeResponse): User {
+  return {
+    id: me.id,
+    name: me.full_name ?? me.email.split('@')[0],
+    email: me.email,
+    role: me.role,
+    companyId: me.company_id ?? undefined,
+    companyName: me.company_name ?? undefined,
+    isVerified: me.is_verified,
+    createdAt: me.created_at,
+  };
 }
 
-/**
- * Helper to resolve the current demo recruiter's company id.
- */
-function getCurrentRecruiterCompanyId(): string | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (!stored) return null;
-    const user = JSON.parse(stored) as User | null;
-    if (!user || user.role !== 'recruiter') return null;
-    return user.companyId ?? null;
-  } catch {
-    return null;
-  }
+export function mapCandidateProfile(
+  api: ApiCandidateProfile,
+  identity: { id: string; email: string }
+): CandidateProfile {
+  return {
+    id: identity.id,
+    fullName: api.full_name ?? '',
+    headline: api.headline ?? '',
+    email: identity.email,
+    phone: api.phone ?? '',
+    location: api.location ?? '',
+    bio: api.bio ?? '',
+    website: api.website ?? '',
+    github: api.github ?? '',
+    linkedin: api.linkedin ?? '',
+    skills: api.skills,
+    experience: api.experience.map<WorkExperience>((item) => ({
+      id: item.id,
+      role: item.role,
+      company: item.company,
+      location: item.location ?? '',
+      startDate: item.start_date,
+      endDate: item.end_date ?? '',
+      current: item.current,
+      description: item.description ?? '',
+    })),
+    education: api.education.map<Education>((item) => ({
+      id: item.id,
+      degree: item.degree,
+      field: item.field ?? '',
+      institution: item.institution,
+      startYear: item.start_year ?? '',
+      endYear: item.end_year ?? '',
+      gpa: item.gpa ?? undefined,
+    })),
+    resume: api.resume
+      ? {
+        fileName: api.resume.file_name,
+        fileSize: api.resume.file_size,
+        uploadedAt: api.resume.uploaded_at,
+        downloadUrl: api.resume.download_url,
+      }
+      : null,
+  };
 }
 
-/**
- * Validate a salary range.
- */
-function validateSalary(salaryMin: number, salaryMax: number): void {
-  if (salaryMin < 0 || salaryMax < 0) {
-    throw new Error('Salary values must be non-negative.');
-  }
-  if (salaryMin > salaryMax) {
-    throw new Error('Minimum salary cannot exceed maximum salary.');
-  }
-}
+/* ------------------------------------------------------------------ */
+/* 1. Auth                                                            */
+/* ------------------------------------------------------------------ */
 
-/**
- * Validate a resume file before it is accepted for demo handling.
- */
-function validateResumeFile(file: File): { name: string; size: number; type: string } {
-  const allowedExtensions = ['.pdf', '.doc', '.docx'];
-  const allowedMimeTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ];
-
-  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-  if (!allowedExtensions.includes(ext)) {
-    throw new Error(`Unsupported file type "${ext}". Allowed types: ${allowedExtensions.join(', ')}.`);
-  }
-
-  if (file.type && !allowedMimeTypes.includes(file.type)) {
-    throw new Error(`Unsupported MIME type "${file.type}".`);
-  }
-
-  const maxSizeBytes = 10 * 1024 * 1024;
-  if (file.size > maxSizeBytes) {
-    throw new Error(`File exceeds the 10 MB maximum size (${Math.round(file.size / 1024 / 1024)} MB).`);
-  }
-
-  return { name: file.name, size: file.size, type: file.type };
-}
-
-/**
- * In-memory store for resume Blobs during the current browser session.
- * Temporary demo storage — files are NOT persisted to a server.
- */
-const sessionResumeStore = new Map<string, { blob: Blob; file: File }>();
-
-function storeSessionResume(candidateId: string, file: File): string {
-  const refId = `resume-${candidateId}-${Date.now()}`;
-  sessionResumeStore.set(refId, { blob: file, file });
-  return refId;
-}
-
-function getSessionResume(refId: string): { blob: Blob; file: File } | undefined {
-  return sessionResumeStore.get(refId);
-}
-
-/**
- * =========================================================================
- * FASTAPI INTEGRATION NOTE:
- * When connecting to a production FastAPI backend, replace these method bodies
- * with HTTP calls (e.g. axios/fetch) to /api/v1 endpoints. All components rely
- * purely on this typed service interface, so no page-level changes are needed.
- * =========================================================================
- */
-
-// 1. Auth Service
 export const authService = {
+  /** Persist the access token in memory and return the auth token. */
+  adoptToken(token: AuthToken): AuthToken {
+    setAccessToken(token.access_token);
+    return token;
+  },
+
+  async login(email: string, password: string): Promise<AuthToken> {
+    const token = await http.post<AuthToken>('/auth/login', { email, password });
+    return authService.adoptToken(token);
+  },
+
+  async register(payload: RegisterPayload): Promise<{ user_id: string; email: string; role: UserRole }> {
+    return http.post('/auth/register', payload);
+  },
+
   async getCurrentUser(): Promise<User | null> {
-    await delay(50);
-    const stored = getStorageItem<User | null>(STORAGE_KEYS.CURRENT_USER, null);
-    return stored;
-  },
-
-  async login(role: UserRole = 'candidate', email?: string): Promise<User> {
-    await delay(100);
-    const user = DEMO_USERS[role] || {
-      id: `usr-${Date.now()}`,
-      name: email?.split('@')[0] || 'Demo User',
-      email: email || 'user@example.com',
-      role,
-      title: role === 'candidate' ? 'Frontend Engineer' : role === 'recruiter' ? 'Talent Acquisition' : 'Administrator',
-      createdAt: new Date().toISOString(),
-    };
-    setStorageItem(STORAGE_KEYS.CURRENT_USER, user);
-    return user;
-  },
-
-  async register(name: string, email: string, role: UserRole): Promise<User> {
-    await delay(150);
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      name,
-      email,
-      role,
-      title: role === 'candidate' ? 'Job Candidate' : role === 'recruiter' ? 'Hiring Recruiter' : 'Platform Staff',
-      createdAt: new Date().toISOString(),
-    };
-    setStorageItem(STORAGE_KEYS.CURRENT_USER, newUser);
-    return newUser;
+    try {
+      const me = await http.get<MeResponse>('/auth/me');
+      return mapMe(me);
+    } catch (error) {
+      if (error instanceof ApiError && error.isAuthError) return null;
+      throw error;
+    }
   },
 
   async logout(): Promise<void> {
-    await delay(50);
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    try {
+      await http.post('/auth/logout');
+    } catch {
+      // Signing out must always succeed locally, even if the API is unreachable.
+    } finally {
+      setAccessToken(null);
+    }
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await http.post('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_new_password: newPassword,
+    });
+    setAccessToken(null);
   },
 };
 
-// 2. Job Service
+/* ------------------------------------------------------------------ */
+/* 2. Jobs                                                            */
+/* ------------------------------------------------------------------ */
+
+function jobQuery(params?: JobFilterParams): Record<string, unknown> {
+  return {
+    q: params?.query || undefined,
+    location: params?.location || undefined,
+    workplace_type: params?.workplaceType && params.workplaceType !== 'All' ? params.workplaceType : undefined,
+    job_type: params?.jobType && params.jobType !== 'All' ? params.jobType : undefined,
+    experience_level:
+      params?.experienceLevel && params.experienceLevel !== 'All' ? params.experienceLevel : undefined,
+    department: params?.department && params.department !== 'All' ? params.department : undefined,
+    salary_min: params?.salaryMin && params.salaryMin > 0 ? params.salaryMin : undefined,
+    salary_max: params?.salaryMax && params.salaryMax > 0 ? params.salaryMax : undefined,
+    status: params?.status && params.status !== 'All' ? params.status : undefined,
+    company_id: params?.companyId || undefined,
+    sort: params?.sort || 'newest',
+  };
+}
+
 export const jobService = {
   async getJobs(params?: JobFilterParams): Promise<Job[]> {
-    await delay(100);
-    let jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-
-    // Public visibility: only published jobs are visible by default.
-    // Recruiters/admins pass includeAll: true to see draft/closed jobs.
-    if (!params?.includeAll) {
-      jobs = jobs.filter((j) => j.status === 'published');
-    }
-
-    if (params?.companyId) {
-      jobs = jobs.filter((j) => j.companyId === params.companyId);
-    }
-
-    if (params?.status && params.status !== 'All') {
-      jobs = jobs.filter((j) => j.status === params.status);
-    }
-
-    if (params?.query) {
-      const q = params.query.toLowerCase().trim();
-      const words = q.split(/\s+/).filter(Boolean);
-      jobs = jobs.filter((j) => {
-        const fullHaystack = `${j.title} ${j.companyName} ${j.description} ${j.department} ${j.requirements.join(' ')} ${j.responsibilities.join(' ')}`.toLowerCase();
-        if (fullHaystack.includes(q)) return true;
-        if (words.length > 1 && words.every((w) => fullHaystack.includes(w))) return true;
-        return false;
-      });
-    }
-
-    if (params?.location) {
-      const loc = params.location.toLowerCase();
-      jobs = jobs.filter((j) => j.location.toLowerCase().includes(loc));
-    }
-
-    if (params?.workplaceType && params.workplaceType !== 'All') {
-      jobs = jobs.filter((j) => j.workplaceType === params.workplaceType);
-    }
-
-    if (params?.jobType && params.jobType !== 'All') {
-      jobs = jobs.filter((j) => j.jobType === params.jobType);
-    }
-
-    if (params?.experienceLevel && params.experienceLevel !== 'All') {
-      jobs = jobs.filter((j) => j.experienceLevel === params.experienceLevel);
-    }
-
-    // Salary filtering fix (Task 5):
-    // - Minimum salary filter: exclude jobs whose maximum salary is below the requested minimum.
-    // - Maximum salary filter: exclude jobs whose minimum salary is above the requested maximum.
-    if (params?.salaryMin && params.salaryMin > 0) {
-      const minSalary = params.salaryMin;
-      jobs = jobs.filter((j) => j.salaryMax >= minSalary);
-    }
-    if (params?.salaryMax && params.salaryMax > 0) {
-      const maxSalary = params.salaryMax;
-      jobs = jobs.filter((j) => j.salaryMin <= maxSalary);
-    }
-
-    if (params?.department && params.department !== 'All') {
-      const dept = params.department;
-      jobs = jobs.filter((j) => j.department.toLowerCase() === dept.toLowerCase());
-    }
-
-    if (params?.sort === 'salary-high') {
-      jobs.sort((a, b) => b.salaryMax - a.salaryMax);
-    } else if (params?.sort === 'salary-low') {
-      jobs.sort((a, b) => a.salaryMin - b.salaryMin);
-    } else {
-      // newest
-      jobs.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
-    }
-
-    return jobs;
+    const page = await http.get<Page<ApiJob>>('/jobs', { ...jobQuery(params), page_size: 100 });
+    return page.items.map(mapJob);
   },
 
   async getJobById(id: string): Promise<Job | null> {
-    await delay(80);
-    const jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-    return jobs.find((j) => j.id === id) || null;
+    try {
+      return mapJob(await http.get<ApiJob>(`/jobs/${encodeURIComponent(id)}`));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
   },
 
-  async createJob(jobData: Omit<Job, 'id' | 'postedDate' | 'applicantsCount'>): Promise<Job> {
-    await delay(150);
-
-    validateSalary(jobData.salaryMin, jobData.salaryMax);
-
-    if (!jobData.companyId || !jobData.companyName) {
-      throw new Error('A job must belong to a company.');
-    }
-
-    const jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-    const newJob: Job = {
-      ...jobData,
-      id: `job-${Date.now()}`,
-      postedDate: new Date().toISOString().split('T')[0],
-      applicantsCount: 0,
-    };
-    jobs.unshift(newJob);
-    setStorageItem(STORAGE_KEYS.JOBS, jobs);
-    return newJob;
+  /** Recruiter: all jobs of my company, including drafts and closed. */
+  async getMyCompanyJobs(): Promise<Job[]> {
+    const jobs = await http.get<ApiJob[]>('/jobs/mine');
+    return jobs.map(mapJob);
   },
 
-  async updateJob(id: string, updates: Partial<Job>, companyId?: string): Promise<Job> {
-    await delay(120);
-    const jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-    const index = jobs.findIndex((j) => j.id === id);
-    if (index === -1) throw new Error('Job not found');
-
-    // Ownership verification: a recruiter may only modify their own company's jobs.
-    if (companyId !== undefined && jobs[index].companyId !== companyId) {
-      throw new Error('You do not have permission to modify this job requisition.');
-    }
-
-    // Prevent reversing a salary range on update.
-    const next = { ...jobs[index], ...updates };
-    if (next.salaryMin !== undefined && next.salaryMax !== undefined) {
-      if (next.salaryMin > next.salaryMax) {
-        throw new Error('Minimum salary cannot exceed maximum salary.');
-      }
-    } else if (next.salaryMin !== undefined && jobs[index].salaryMax !== undefined) {
-      if (next.salaryMin > jobs[index].salaryMax) {
-        throw new Error('Minimum salary cannot exceed maximum salary.');
-      }
-    } else if (next.salaryMax !== undefined && jobs[index].salaryMin !== undefined) {
-      if (jobs[index].salaryMin > next.salaryMax) {
-        throw new Error('Minimum salary cannot exceed maximum salary.');
-      }
-    }
-
-    jobs[index] = next;
-    setStorageItem(STORAGE_KEYS.JOBS, jobs);
-    return jobs[index];
+  async createJob(input: JobInput): Promise<Job> {
+    return mapJob(await http.post<ApiJob>('/jobs', mapJobInput(input)));
   },
 
-  async deleteJob(id: string, companyId?: string): Promise<boolean> {
-    await delay(100);
-    const jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-    const index = jobs.findIndex((j) => j.id === id);
-    if (index === -1) throw new Error('Job not found');
-
-    // Ownership verification
-    if (companyId !== undefined && jobs[index].companyId !== companyId) {
-      throw new Error('You do not have permission to delete this job requisition.');
+  async updateJob(id: string, input: Partial<JobInput>): Promise<Job> {
+    const body = mapJobInput({ ...(input as JobInput) });
+    // Only send keys that were actually supplied, so PATCH stays partial.
+    const partial: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(body)) {
+      if (value !== undefined) partial[key] = value;
     }
+    return mapJob(await http.patch<ApiJob>(`/jobs/${encodeURIComponent(id)}`, partial));
+  },
 
-    jobs.splice(index, 1);
-    setStorageItem(STORAGE_KEYS.JOBS, jobs);
+  async deleteJob(id: string): Promise<boolean> {
+    await http.del(`/jobs/${encodeURIComponent(id)}`);
     return true;
   },
 
-  // Saved Jobs for Candidate (scoped per candidate id)
-  async getSavedJobIds(candidateId?: string): Promise<string[]> {
-    await delay(60);
-    const id = candidateId ?? getCurrentCandidateId();
-    if (!id) return [];
-    return getStorageItem<string[]>(`hireflow_saved_jobs_v1_${id}`, []);
+  async setFeatured(id: string, featured: boolean): Promise<Job> {
+    return mapJob(await http.patch<ApiJob>(`/jobs/${encodeURIComponent(id)}/featured`, { featured }));
   },
 
-  async toggleSaveJob(jobId: string, candidateId?: string): Promise<boolean> {
-    await delay(80);
-    const id = candidateId ?? getCurrentCandidateId();
-    if (!id) throw new Error('No candidate identity available to save jobs.');
-    const saved = getStorageItem<string[]>(`hireflow_saved_jobs_v1_${id}`, []);
-    const exists = saved.includes(jobId);
-    const nextSaved = exists ? saved.filter((jid) => jid !== jobId) : [...saved, jobId];
-    setStorageItem(`hireflow_saved_jobs_v1_${id}`, nextSaved);
-    return !exists;
+  async getSavedJobIds(): Promise<string[]> {
+    return http.get<string[]>('/jobs/saved/ids');
+  },
+
+  async getSavedJobs(): Promise<Job[]> {
+    return (await http.get<ApiJob[]>('/jobs/saved')).map(mapJob);
+  },
+
+  async toggleSaveJob(jobId: string): Promise<boolean> {
+    const ids = await http.post<string[]>(`/jobs/${encodeURIComponent(jobId)}/save`);
+    return ids.includes(jobId);
+  },
+
+  async getAppliedJobIds(): Promise<string[]> {
+    return http.get<string[]>('/jobs/applied/ids');
   },
 };
 
-// 3. Application Service
+/* ------------------------------------------------------------------ */
+/* 3. Applications                                                    */
+/* ------------------------------------------------------------------ */
+
 export const applicationService = {
-  async getCandidateApplications(candidateId: string): Promise<Application[]> {
-    await delay(100);
-    const apps = getStorageItem<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
-    return apps.filter((a) => a.candidateId === candidateId);
+  /** Candidate: my own applications (server scopes by token). */
+  async getCandidateApplications(): Promise<Application[]> {
+    const rows = await http.get<ApiApplication[]>('/candidates/me/applications');
+    return rows.map(mapApplication);
   },
 
-  async getRecruiterApplications(companyId?: string): Promise<Application[]> {
-    await delay(120);
-    const apps = getStorageItem<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
-    if (!companyId) return apps;
-    return apps.filter((a) => a.companyId === companyId);
+  /** Recruiter: applications for my company (server scopes by membership). */
+  async getRecruiterApplications(params?: {
+    jobId?: string;
+    status?: ApplicationStatus;
+    search?: string;
+  }): Promise<Application[]> {
+    const rows = await http.get<ApiApplication[]>('/applications', {
+      job_id: params?.jobId,
+      status: params?.status,
+      search: params?.search,
+    });
+    return rows.map(mapApplication);
   },
 
-  async applyToJob(params: {
-    job: Job;
-    candidate: CandidateProfile;
-    coverLetter?: string;
-    resumeFileName?: string;
-  }): Promise<Application> {
-    await delay(200);
+  async getApplication(applicationId: string): Promise<Application> {
+    return mapApplication(await http.get<ApiApplication>(`/applications/${encodeURIComponent(applicationId)}`));
+  },
 
-    // Job details should not allow applications to closed or unpublished jobs.
-    if (params.job.status !== 'published') {
-      throw new Error(`Cannot apply to "${params.job.title}": the position is not currently open for applications.`);
-    }
-
-    const apps = getStorageItem<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
-
-    // Check if already applied (same candidate + same job)
-    const existing = apps.find(
-      (a) => a.jobId === params.job.id && a.candidateId === params.candidate.id
-    );
-    if (existing) {
-      return existing;
-    }
-
-    const newApp: Application = {
-      id: `app-${Date.now()}`,
-      jobId: params.job.id,
-      jobTitle: params.job.title,
-      companyId: params.job.companyId,
-      companyName: params.job.companyName,
-      companyLogo: params.job.companyLogo,
-      candidateId: params.candidate.id,
-      candidateName: params.candidate.fullName,
-      candidateEmail: params.candidate.email,
-      candidatePhone: params.candidate.phone,
-      candidateHeadline: params.candidate.headline,
-      resumeFileName: params.resumeFileName || params.candidate.resume?.fileName || 'Resume_Document.pdf',
-      resumeSize: params.candidate.resume?.fileSize || '240 KB',
-      coverLetter: params.coverLetter || '',
-      appliedDate: new Date().toISOString().split('T')[0],
-      status: 'Applied',
-      stageUpdatedAt: new Date().toISOString().split('T')[0],
-      rating: 4,
-    };
-
-    apps.unshift(newApp);
-    setStorageItem(STORAGE_KEYS.APPLICATIONS, apps);
-
-    // Increment job applicants count
-    const jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-    const jobIndex = jobs.findIndex((j) => j.id === params.job.id);
-    if (jobIndex !== -1) {
-      jobs[jobIndex].applicantsCount += 1;
-      setStorageItem(STORAGE_KEYS.JOBS, jobs);
-    }
-
-    return newApp;
+  async applyToJob(jobId: string, coverLetter?: string): Promise<Application> {
+    const row = await http.post<ApiApplication>(`/applications/jobs/${encodeURIComponent(jobId)}`, {
+      cover_letter: coverLetter?.trim() ? coverLetter : null,
+    });
+    return mapApplication(row);
   },
 
   async updateStatus(
@@ -454,162 +363,228 @@ export const applicationService = {
     notes?: string,
     rating?: number
   ): Promise<Application> {
-    await delay(100);
-    const apps = getStorageItem<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
-    const index = apps.findIndex((a) => a.id === applicationId);
-    if (index === -1) throw new Error('Application not found');
-
-    // Validate that the status is one of the canonical five
-    if (!['Applied', 'Shortlisted', 'Interview', 'Selected', 'Rejected'].includes(status)) {
-      throw new Error(`Invalid application status: ${status}`);
-    }
-
-    apps[index].status = status;
-    apps[index].stageUpdatedAt = new Date().toISOString().split('T')[0];
-    if (notes !== undefined) apps[index].notes = notes;
-    if (rating !== undefined) apps[index].rating = rating;
-
-    setStorageItem(STORAGE_KEYS.APPLICATIONS, apps);
-    return apps[index];
+    const row = await http.patch<ApiApplication>(`/applications/${encodeURIComponent(applicationId)}`, {
+      status,
+      notes: notes ?? null,
+      rating: rating ?? null,
+    });
+    return mapApplication(row);
   },
 };
 
-// 4. Candidate Profile Service
+/* ------------------------------------------------------------------ */
+/* 4. Candidate profile                                               */
+/* ------------------------------------------------------------------ */
+
+function emptyProfile(id: string, email: string): CandidateProfile {
+  return {
+    id,
+    fullName: '',
+    headline: '',
+    email,
+    phone: '',
+    location: '',
+    bio: '',
+    website: '',
+    github: '',
+    linkedin: '',
+    skills: [],
+    experience: [],
+    education: [],
+    resume: null,
+  };
+}
+
 export const profileService = {
-  async getProfile(candidateId?: string): Promise<CandidateProfile> {
-    await delay(100);
-    const id = candidateId ?? getCurrentCandidateId();
-    if (!id) {
-      // No candidate identity: return an empty profile shape without touching storage.
-      return {
-        id: '',
-        fullName: '',
-        headline: '',
-        email: '',
-        phone: '',
-        location: '',
-        bio: '',
-        website: '',
-        github: '',
-        linkedin: '',
-        skills: [],
-        experience: [],
-        education: [],
-        resume: null,
-      };
+  async getProfile(identity?: { id: string; email: string }): Promise<CandidateProfile> {
+    const me = await http.get<MeResponse>('/auth/me');
+    if (me.role !== 'candidate') {
+      const current = identity ?? { id: me.id, email: me.email };
+      return emptyProfile(current.id, current.email);
     }
-
-    const stored = getStorageItem<CandidateProfile | null>(`hireflow_candidate_profile_v1_${id}`, null);
-    if (stored) return stored;
-
-    // No profile exists yet for this candidate. Return an empty profile for the id.
-    return {
-      id,
-      fullName: '',
-      headline: '',
-      email: '',
-      phone: '',
-      location: '',
-      bio: '',
-      website: '',
-      github: '',
-      linkedin: '',
-      skills: [],
-      experience: [],
-      education: [],
-      resume: null,
-    };
+    const profile = await http.get<ApiCandidateProfile>('/candidates/me/profile');
+    return mapCandidateProfile(profile, { id: me.id, email: me.email });
   },
 
-  async updateProfile(candidateId: string, updates: Partial<CandidateProfile>): Promise<CandidateProfile> {
-    await delay(150);
-    const current = await this.getProfile(candidateId);
-    const updated: CandidateProfile = { ...current, ...updates, id: candidateId };
-    setStorageItem(`hireflow_candidate_profile_v1_${candidateId}`, updated);
-    return updated;
+  async updateProfile(
+    updates: Partial<Omit<CandidateProfile, 'id' | 'email' | 'skills' | 'experience' | 'education' | 'resume'>>
+  ): Promise<CandidateProfile> {
+    const body: Record<string, unknown> = {};
+    const map: Record<string, string> = {
+      fullName: 'full_name',
+      headline: 'headline',
+      phone: 'phone',
+      location: 'location',
+      bio: 'bio',
+      website: 'website',
+      github: 'github',
+      linkedin: 'linkedin',
+    };
+    for (const [camel, snake] of Object.entries(map)) {
+      const value = (updates as Record<string, unknown>)[camel];
+      if (value !== undefined) body[snake] = value === '' ? null : value;
+    }
+    await http.patch<ApiCandidateProfile>('/candidates/me/profile', body);
+    return profileService.getProfile();
   },
 
-  async uploadResume(candidateId: string, file: File): Promise<CandidateProfile> {
-    await delay(200);
+  async replaceSkills(skills: string[]): Promise<CandidateProfile> {
+    await http.put<ApiCandidateProfile>('/candidates/me/skills', { skills });
+    return profileService.getProfile();
+  },
 
-    // Validate before accepting the file (Task 7)
-    const metadata = validateResumeFile(file);
+  async addExperience(entry: Omit<WorkExperience, 'id'>): Promise<CandidateProfile> {
+    await http.post<ApiCandidateProfile>('/candidates/me/experience', {
+      role: entry.role,
+      company: entry.company,
+      location: entry.location || null,
+      start_date: entry.startDate,
+      end_date: entry.current ? null : entry.endDate || null,
+      current: entry.current,
+      description: entry.description || null,
+    });
+    return profileService.getProfile();
+  },
 
-    // Store the file as a session Blob for honest demo download. Do NOT
-    // persist base64 to localStorage. This is temporary browser-session storage.
-    const refId = storeSessionResume(candidateId, file);
+  async deleteExperience(id: string): Promise<CandidateProfile> {
+    await http.del<ApiCandidateProfile>(`/candidates/me/experience/${encodeURIComponent(id)}`);
+    return profileService.getProfile();
+  },
 
-    const sizeInKb = `${Math.round(file.size / 1024)} KB`;
-    const current = await this.getProfile(candidateId);
-    current.resume = {
-      fileName: file.name,
-      fileSize: sizeInKb,
-      uploadedAt: new Date().toISOString().split('T')[0],
-      previewUrl: refId, // session reference, not a server URL
-    };
-    setStorageItem(`hireflow_candidate_profile_v1_${candidateId}`, current);
-    return current;
+  async addEducation(entry: Omit<Education, 'id'>): Promise<CandidateProfile> {
+    await http.post<ApiCandidateProfile>('/candidates/me/education', {
+      degree: entry.degree,
+      field: entry.field || null,
+      institution: entry.institution,
+      start_year: entry.startYear || null,
+      end_year: entry.endYear || null,
+      gpa: entry.gpa || null,
+    });
+    return profileService.getProfile();
+  },
+
+  async deleteEducation(id: string): Promise<CandidateProfile> {
+    await http.del<ApiCandidateProfile>(`/candidates/me/education/${encodeURIComponent(id)}`);
+    return profileService.getProfile();
+  },
+
+  async uploadResume(file: File): Promise<ApiResume> {
+    const form = new FormData();
+    form.append('file', file);
+    return http.upload<ApiResume>('/candidates/me/resume', form);
+  },
+
+  async deleteResume(): Promise<void> {
+    await http.del('/candidates/me/resume');
+  },
+
+  /** Download through the authenticated endpoint (bearer token attached). */
+  async downloadResume(path: string, fallbackName: string): Promise<void> {
+    await downloadAuthenticated(path, fallbackName);
   },
 };
 
-// 5. Company Service
+/* ------------------------------------------------------------------ */
+/* 5. Companies                                                       */
+/* ------------------------------------------------------------------ */
+
 export const companyService = {
   async getCompanies(): Promise<Company[]> {
-    await delay(80);
-    return getStorageItem<Company[]>(STORAGE_KEYS.COMPANIES, INITIAL_COMPANIES);
+    return (await http.get<ApiCompany[]>('/companies')).map(mapCompany);
   },
 
   async getCompanyById(id: string): Promise<Company | null> {
-    await delay(60);
-    const companies = getStorageItem<Company[]>(STORAGE_KEYS.COMPANIES, INITIAL_COMPANIES);
-    return companies.find((c) => c.id === id) || null;
+    try {
+      return mapCompany(await http.get<ApiCompany>(`/companies/${encodeURIComponent(id)}`));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
   },
 
-  async updateCompany(id: string, updates: Partial<Company>): Promise<Company> {
-    await delay(120);
-    const companies = getStorageItem<Company[]>(STORAGE_KEYS.COMPANIES, INITIAL_COMPANIES);
-    const index = companies.findIndex((c) => c.id === id);
-    if (index === -1) throw new Error('Company not found');
-    companies[index] = { ...companies[index], ...updates };
-    setStorageItem(STORAGE_KEYS.COMPANIES, companies);
-    return companies[index];
+  /** Recruiter: my own company (no id is ever sent). */
+  async getMyCompany(): Promise<Company> {
+    return mapCompany(await http.get<ApiCompany>('/companies/me'));
+  },
+
+  async updateMyCompany(updates: Partial<Company>): Promise<Company> {
+    const body: Record<string, unknown> = {};
+    const map: Record<string, string> = {
+      name: 'name',
+      industry: 'industry',
+      location: 'location',
+      website: 'website',
+      employeeCount: 'employee_count',
+      description: 'description',
+    };
+    for (const [camel, snake] of Object.entries(map)) {
+      const value = (updates as Record<string, unknown>)[camel];
+      if (value !== undefined) body[snake] = value === '' ? null : value;
+    }
+    return mapCompany(await http.patch<ApiCompany>('/companies/me', body));
   },
 };
 
-// 6. Admin Service
+/* ------------------------------------------------------------------ */
+/* 6. Admin                                                           */
+/* ------------------------------------------------------------------ */
+
 export const adminService = {
   async getMetrics(): Promise<AdminMetrics> {
-    await delay(100);
-    const jobs = getStorageItem<Job[]>(STORAGE_KEYS.JOBS, INITIAL_JOBS);
-    const companies = getStorageItem<Company[]>(STORAGE_KEYS.COMPANIES, INITIAL_COMPANIES);
-    const applications = getStorageItem<Application[]>(STORAGE_KEYS.APPLICATIONS, INITIAL_APPLICATIONS);
-
-    // Calculate from existing mock records. No fabricated platform statistics.
-    const uniqueCandidateIds = new Set(applications.map((a) => a.candidateId));
-    const selectedApplications = applications.filter((a) => a.status === 'Selected');
-
+    const metrics = await http.get<{
+      total_candidates: number;
+      total_companies: number;
+      total_jobs: number;
+      active_applications: number;
+      hired_total: number;
+    }>('/admin/metrics');
     return {
-      totalCandidates: uniqueCandidateIds.size,
-      totalCompanies: companies.length,
-      totalJobs: jobs.length,
-      activeApplications: applications.filter((a) => a.status !== 'Rejected').length,
-      hiredThisMonth: selectedApplications.length,
-      platformGrowth: 'Demo data — not actual platform metrics',
+      totalCandidates: metrics.total_candidates,
+      totalCompanies: metrics.total_companies,
+      totalJobs: metrics.total_jobs,
+      activeApplications: metrics.active_applications,
+      hiredTotal: metrics.hired_total,
     };
   },
 
-  async setCompanyVerification(id: string, verified: boolean): Promise<Company> {
-    return companyService.updateCompany(id, { verified });
+  async getCandidates(search?: string): Promise<AdminCandidateRow[]> {
+    const rows = await http.get<ApiAdminCandidate[]>('/admin/candidates', { search });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.full_name ?? row.email.split('@')[0],
+      email: row.email,
+      headline: row.headline ?? '',
+      location: row.location ?? '',
+      skills: row.skills,
+      applicationsCount: row.applications_count,
+      status: row.is_active ? 'active' : 'suspended',
+      registeredDate: row.registered_date,
+    }));
   },
 
-  async setJobStatus(id: string, status: 'published' | 'draft' | 'closed'): Promise<Job> {
-    return jobService.updateJob(id, { status });
+  async setCandidateActive(candidateId: string, isActive: boolean): Promise<void> {
+    await http.patch<ApiAdminCandidate>(`/admin/candidates/${encodeURIComponent(candidateId)}/status`, {
+      is_active: isActive,
+    });
+  },
+
+  async setCompanyVerification(companyId: string, verified: boolean): Promise<Company> {
+    return mapCompany(
+      await http.patch<ApiCompany>(`/admin/companies/${encodeURIComponent(companyId)}/verification`, {
+        is_verified: verified,
+      })
+    );
   },
 };
 
-// Expose resume session helpers for the resume page (demo-only, not server storage)
-export const resumeSession = {
-  getResume(refId: string) {
-    return getSessionResume(refId);
-  },
-};
+export interface AdminCandidateRow {
+  id: string;
+  name: string;
+  email: string;
+  headline: string;
+  location: string;
+  skills: string[];
+  applicationsCount: number;
+  status: 'active' | 'suspended';
+  registeredDate: string;
+}

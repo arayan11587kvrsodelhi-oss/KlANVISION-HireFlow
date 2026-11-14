@@ -1,8 +1,43 @@
 """SQLAlchemy models for HireFlow.
 
-Model packages follow the database-first design from the approved architecture.
-Each table has its own ORM model with proper relationships, constraints,
-and UUID primary keys.
+All models are imported here so that ``Base.metadata`` is fully populated for
+Alembic autogenerate and so relationship string references always resolve.
 """
 
-from . import user, company, job, application, resume  # noqa: F401,F403
+from app.models.user import (  # noqa: F401
+    CandidateEducation,
+    CandidateExperience,
+    CandidateProfile,
+    CandidateSkill,
+    RecruiterProfile,
+    RefreshToken,
+    SavedJob,
+    User,
+)
+from app.models.company import Company, RecruiterCompanyMembership  # noqa: F401
+from app.models.job import Job, JobBullet  # noqa: F401
+from app.models.application import (  # noqa: F401
+    APPLICATION_STATUSES,
+    Application,
+    ApplicationStatusHistory,
+)
+from app.models.resume import Resume  # noqa: F401
+
+__all__ = [
+    "User",
+    "CandidateProfile",
+    "CandidateSkill",
+    "CandidateExperience",
+    "CandidateEducation",
+    "RecruiterProfile",
+    "RefreshToken",
+    "SavedJob",
+    "Company",
+    "RecruiterCompanyMembership",
+    "Job",
+    "JobBullet",
+    "Application",
+    "ApplicationStatusHistory",
+    "Resume",
+    "APPLICATION_STATUSES",
+]

@@ -1,16 +1,29 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { UserRole } from '../../types';
+import { ApiError } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Briefcase, ArrowRight, UserCheck, Building, Mail, Lock, User, AlertCircle } from 'lucide-react';
+
+/** Mirrors the server-side password policy (letters + digits, 8-72 bytes). */
+function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (new TextEncoder().encode(password).length > 72)
+    return 'Password must be at most 72 bytes long.';
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password))
+    return 'Password must contain both letters and numbers.';
+  return null;
+}
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<'candidate' | 'recruiter'>('candidate');
+  const [searchParams] = useSearchParams();
+  const [role, setRole] = useState<'candidate' | 'recruiter'>(
+    searchParams.get('role') === 'recruiter' ? 'recruiter' : 'candidate'
+  );
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,8 +48,9 @@ export const RegisterPage: React.FC = () => {
       setErrorMessage('Please enter your company or employer name.');
       return;
     }
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
+    const passwordProblem = validatePassword(password);
+    if (passwordProblem) {
+      setErrorMessage(passwordProblem);
       return;
     }
     if (!agreeTerms) {
@@ -46,11 +60,22 @@ export const RegisterPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await register(fullName, email, role);
-      if (role === 'recruiter') navigate('/recruiter');
-      else navigate('/candidate');
-    } catch {
-      setErrorMessage('Failed to create account. Please verify input fields.');
+      await register({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+        role,
+        companyName: role === 'recruiter' ? companyName.trim() : undefined,
+      });
+      // Registration does not create a session; send the user to sign in with
+      // the credentials they just chose.
+      navigate('/login', { replace: true });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.firstFieldError ?? error.message);
+      } else {
+        setErrorMessage('Failed to create account. Please verify your details.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -145,7 +170,7 @@ export const RegisterPage: React.FC = () => {
                 label="Company or Entity Name"
                 type="text"
                 required
-                placeholder="e.g. CloudScale Labs"
+                placeholder="e.g. Acme Technologies"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 leftIcon={<Building className="w-3.5 h-3.5" />}
@@ -155,8 +180,9 @@ export const RegisterPage: React.FC = () => {
             <Input
               label="Password"
               type="password"
+              autoComplete="new-password"
               required
-              placeholder="Minimum 6 characters"
+              placeholder="At least 8 characters, letters and numbers"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               leftIcon={<Lock className="w-3.5 h-3.5" />}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Job, Company } from '../../types';
 import { jobService, companyService } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import { formatSalary, formatDate, getWorkplaceBadgeClass } from '../../utils/formatters';
 import { Button } from '../../components/common/Button';
 import { Card, CardContent } from '../../components/common/Card';
@@ -34,18 +35,32 @@ export const LandingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'candidates' | 'recruiters'>('candidates');
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { role } = useAuth();
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
-      const allJobs = await jobService.getJobs();
-      setFeaturedJobs(allJobs.slice(0, 4));
-      const allCompanies = await companyService.getCompanies();
-      setCompanies(allCompanies);
-      const saved = await jobService.getSavedJobIds();
-      setSavedJobIds(saved);
+      try {
+        const [allJobs, allCompanies] = await Promise.all([
+          jobService.getJobs(),
+          companyService.getCompanies(),
+        ]);
+        if (cancelled) return;
+        setFeaturedJobs(allJobs.slice(0, 4));
+        setCompanies(allCompanies);
+        if (role === 'candidate') {
+          const saved = await jobService.getSavedJobIds();
+          if (!cancelled) setSavedJobIds(saved);
+        }
+      } catch (err) {
+        if (!cancelled) console.error('Failed to load the job board', err);
+      }
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [role]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,9 +73,20 @@ export const LandingPage: React.FC = () => {
   const handleToggleSave = async (jobId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    await jobService.toggleSaveJob(jobId);
-    const updated = await jobService.getSavedJobIds();
-    setSavedJobIds(updated);
+    if (role !== 'candidate') {
+      // Saving is a candidate action; sending a visitor to sign in is clearer
+      // than a silent failure.
+      navigate(`/login?redirect=${encodeURIComponent('/jobs')}`);
+      return;
+    }
+    try {
+      const saved = await jobService.toggleSaveJob(jobId);
+      setSavedJobIds((prev) =>
+        saved ? [...prev, jobId] : prev.filter((id) => id !== jobId)
+      );
+    } catch (err) {
+      console.error('Failed to update bookmark', err);
+    }
   };
 
   const popularSearches = [
@@ -75,10 +101,10 @@ export const LandingPage: React.FC = () => {
     <div className="space-y-20 pb-20">
       {/* Hero Section */}
       <section className="relative pt-8 md:pt-16 px-6 max-w-7xl mx-auto space-y-8">
-        {/* Sample Environment Indicator Banner */}
+        {/* Platform notice banner */}
         <NoticeBanner
-          badge="Sample Platform Environment"
-          message="HireFlow Enterprise Edition · Live demonstration featuring structured recruitment workflows and sample data."
+          badge="HireFlow"
+          message="Browse live openings, apply with your profile and resume, and track every stage from screening to offer."
         />
 
         <div className="text-center max-w-3xl mx-auto space-y-6 pt-2">
@@ -187,9 +213,9 @@ export const LandingPage: React.FC = () => {
             <div className="text-[11px] text-slate-400">Multi-facet filtering</div>
           </div>
           <div className="text-center p-2 space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Backend Integration</div>
-            <div className="text-sm font-bold text-blue-400 font-mono">FastAPI Modular</div>
-            <div className="text-[11px] text-slate-400">OpenAPI 3.1 compliant</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Account Security</div>
+            <div className="text-sm font-bold text-blue-400 font-mono">Role-based Access</div>
+            <div className="text-[11px] text-slate-400">Server-enforced permissions</div>
           </div>
         </div>
       </section>
@@ -260,11 +286,11 @@ export const LandingPage: React.FC = () => {
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
           <div>
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Sample Openings
+              Open Roles
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">Featured Opportunities</h2>
             <p className="text-xs text-slate-400 mt-1">
-              Sample job listings illustrating verified compensation, requirement breakdowns, and direct apply flows.
+              Live listings with published compensation bands and direct application.
             </p>
           </div>
           <Link
@@ -464,7 +490,7 @@ export const LandingPage: React.FC = () => {
       {/* Verified Employers Strip */}
       <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-xs uppercase font-mono tracking-wider text-slate-400 text-center">
-          Featured Sample Employers
+          Hiring Teams on HireFlow
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {companies.map((comp) => (

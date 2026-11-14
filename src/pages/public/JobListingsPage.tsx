@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { Job, WorkplaceType, JobType, ExperienceLevel } from '../../types';
 import { jobService } from '../../services/api';
 import { formatSalary, formatDate, getWorkplaceBadgeClass } from '../../utils/formatters';
@@ -26,6 +27,9 @@ export const JobListingsPage: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { role } = useAuth();
+  const navigate = useNavigate();
 
   // Filter States
   const [query, setQuery] = useState(searchParams.get('query') || '');
@@ -41,6 +45,7 @@ export const JobListingsPage: React.FC = () => {
 
   const fetchJobs = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const results = await jobService.getJobs({
         query,
@@ -53,10 +58,12 @@ export const JobListingsPage: React.FC = () => {
         sort,
       });
       setJobs(results);
-      const saved = await jobService.getSavedJobIds();
-      setSavedJobIds(saved);
+      if (role === 'candidate') {
+        setSavedJobIds(await jobService.getSavedJobIds());
+      }
     } catch (err) {
       console.error('Failed to load jobs', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load open positions.');
     } finally {
       setIsLoading(false);
     }
@@ -74,9 +81,19 @@ export const JobListingsPage: React.FC = () => {
   const handleToggleSave = async (jobId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    await jobService.toggleSaveJob(jobId);
-    const updated = await jobService.getSavedJobIds();
-    setSavedJobIds(updated);
+    if (role !== 'candidate') {
+      navigate(`/login?redirect=${encodeURIComponent('/jobs')}`);
+      return;
+    }
+    try {
+      const saved = await jobService.toggleSaveJob(jobId);
+      setSavedJobIds((prev) =>
+        saved ? [...prev, jobId] : prev.filter((id) => id !== jobId)
+      );
+    } catch (err) {
+      console.error('Failed to update bookmark', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update the bookmark.');
+    }
   };
 
   const handleResetFilters = () => {
@@ -107,8 +124,10 @@ export const JobListingsPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <NoticeBanner
         badge="Live Requisitions Directory"
-        message="Browse sample open technical roles with transparent compensation bands and direct application submission."
+        message="Browse open roles with published compensation bands and direct application submission."
       />
+
+      {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
 
       {/* Top Search Controls Bar */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">

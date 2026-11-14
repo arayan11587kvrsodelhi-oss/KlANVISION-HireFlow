@@ -1,0 +1,113 @@
+
+# CI
+#
+# Validation-only pipeline. It never deploys: staging deploys are a separate,
+# manual, human-approved procedure (see STAGING_DEPLOYMENT_PLAN.md §5).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch/PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal token: read the repo, nothing else. No deploy targets, no secrets.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (pytest + Alembic)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Start PostgreSQL 16
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres createdb -O postgres hireflow_test
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h localhost -U postgres -d hireflow_test; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::PostgreSQL did not become ready"
+          exit 1
+
+      - name: Apply migrations to the CI test database
+        env:
+          ALEMBIC_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
+        run: |
+          alembic upgrade head
+          alembic current
+          alembic check
+
+      - name: Run backend test suite
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
+          SECRET_KEY: ci-only-signing-key-0123456789abcdef0123456789abcdef
+          ENVIRONMENT: development
+          RESUME_STORAGE_DIR: /tmp/hireflow-ci-resumes
+        run: pytest -p no:cacheprovider --tb=short
+
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error

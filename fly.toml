@@ -1,0 +1,36 @@
+app = "hireflow-staging"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  release_command = "alembic upgrade head"
+
+[env]
+  ENVIRONMENT = "staging"
+  RESUME_STORAGE_DIR = "/data/resumes"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/v1/health/ready"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "1gb"
+
+[[mounts]]
+  source = "resumes"
+  destination = "/data"

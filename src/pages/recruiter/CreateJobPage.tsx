@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Job, WorkplaceType, JobType, ExperienceLevel, JobStatus } from '../../types';
+import { WorkplaceType, JobType, ExperienceLevel, JobStatus } from '../../types';
 import { jobService } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { NoticeBanner } from '../../components/common/NoticeBanner';
@@ -9,7 +8,6 @@ import { Plus, Trash2, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react
 
 export const CreateJobPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [title, setTitle] = useState('');
   const [department, setDepartment] = useState('Engineering');
@@ -70,30 +68,19 @@ export const CreateJobPage: React.FC = () => {
     setErrorMessage(null);
 
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
-      const companyId = user?.companyId;
-if (!companyId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Company Assignment"
-        message="Please complete your company profile to create jobs. Contact your administrator if this is incorrect."
-      />
-    </div>
-  );
-}
+      // The owning company is taken from the recruiter's membership server-side:
+      // no company id or company name is sent from the browser.
       await jobService.createJob({
-        title,
-        companyId,
-        companyName: 'CloudScale Labs',
-        companyLogo: 'comp-1',
+        title: title.trim(),
         location,
-        workplaceType,
-        jobType,
-        experienceLevel,
-        salaryMin,
-        salaryMax,
-        salaryCurrency,
+        workplace_type: workplaceType,
+        job_type: jobType,
+        experience_level: experienceLevel,
+        salary_min: salaryMin,
+        salary_max: salaryMax,
+        salary_currency: salaryCurrency,
         department,
         description,
         responsibilities,
@@ -105,7 +92,10 @@ if (!companyId) {
       navigate('/recruiter/jobs');
     } catch (err) {
       console.error('Failed to create job', err);
-      setErrorMessage('An unexpected error occurred while saving the job requisition.');
+      const apiError = err as { firstFieldError?: string; message?: string };
+      setErrorMessage(
+        apiError.firstFieldError ?? apiError.message ?? 'An unexpected error occurred while saving the job requisition.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +103,10 @@ if (!companyId) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <NoticeBanner message="Sample Requisition Creator: Newly published jobs are stored in the client-side evaluation store and instantly appear on the public job board." />
+      <NoticeBanner
+        badge="New Requisition"
+        message="Published roles appear on the public job board immediately; drafts stay private to your company."
+      />
 
       <div className="flex items-center gap-2">
         <button

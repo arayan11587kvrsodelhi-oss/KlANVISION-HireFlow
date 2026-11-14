@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { NoticeBanner } from '../../components/common/NoticeBanner';
 import { Job } from '../../types';
 import { jobService } from '../../services/api';
 import { formatSalary, formatDate, getWorkplaceBadgeClass } from '../../utils/formatters';
@@ -10,16 +11,17 @@ import { Bookmark, MapPin, ArrowRight, Trash2 } from 'lucide-react';
 export const SavedJobsPage: React.FC = () => {
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchSaved = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
-      const savedIds = await jobService.getSavedJobIds();
-      const allJobs = await jobService.getJobs();
-      const filtered = allJobs.filter((j) => savedIds.includes(j.id));
-      setSavedJobs(filtered);
+      // The server returns only the caller's bookmarks, already joined to jobs.
+      setSavedJobs(await jobService.getSavedJobs());
     } catch (err) {
       console.error('Failed to load saved jobs', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load your saved jobs.');
     } finally {
       setIsLoading(false);
     }
@@ -30,8 +32,12 @@ export const SavedJobsPage: React.FC = () => {
   }, []);
 
   const handleRemove = async (jobId: string) => {
-    await jobService.toggleSaveJob(jobId);
-    setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
+    try {
+      await jobService.toggleSaveJob(jobId);
+      setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to remove the bookmark.');
+    }
   };
 
   return (
@@ -49,6 +55,8 @@ export const SavedJobsPage: React.FC = () => {
           {savedJobs.length} bookmarked
         </span>
       </div>
+
+      {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
 
       {isLoading ? (
         <div className="space-y-3">

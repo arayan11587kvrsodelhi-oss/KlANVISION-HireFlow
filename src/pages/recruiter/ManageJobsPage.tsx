@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
 import { Link, useNavigate } from 'react-router-dom';
 import { Job, JobStatus } from '../../types';
 import { jobService } from '../../services/api';
@@ -20,32 +19,23 @@ import {
 } from 'lucide-react';
 
 export const ManageJobsPage: React.FC = () => {
-  const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchJobs = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
-      const companyId = user?.companyId;
-if (!companyId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Company Assignment"
-        message="Please complete your company profile to manage jobs. Contact your administrator if this is incorrect."
-      />
-    </div>
-  );
-}
-      const allJobs = await jobService.getJobs({ includeAll: true });
-      setJobs(allJobs.filter((j) => j.companyId === companyId));
+      // Server-scoped to the caller's company; no company id is supplied here.
+      setJobs(await jobService.getMyCompanyJobs());
     } catch (err) {
       console.error('Failed to load jobs', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load your job postings.');
     } finally {
       setIsLoading(false);
     }
@@ -53,14 +43,17 @@ if (!companyId) {
 
   useEffect(() => {
     fetchJobs();
-  }, [user]);
+  }, []);
 
   const handleToggleStatus = async (jobId: string, currentStatus: JobStatus) => {
     const newStatus: JobStatus = currentStatus === 'published' ? 'closed' : 'published';
-    await jobService.updateJob(jobId, { status: newStatus });
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
-    );
+    try {
+      const updated = await jobService.updateJob(jobId, { status: newStatus });
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? updated : j)));
+    } catch (err) {
+      console.error('Failed to update job status', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update the job status.');
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -72,6 +65,7 @@ if (!companyId) {
       setJobToDelete(null);
     } catch (err) {
       console.error('Failed to delete job', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to delete the job.');
     } finally {
       setIsDeleting(false);
     }
@@ -86,8 +80,9 @@ if (!companyId) {
     <div className="space-y-6">
       <NoticeBanner
         badge="Recruiter Workspace"
-        message="Job Management Console · Manage requisitions for CloudScale Labs."
+        message="Job Management Console · Manage your company's requisitions."
       />
+      {errorMessage && <NoticeBanner badge="ERROR" message={errorMessage} />}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

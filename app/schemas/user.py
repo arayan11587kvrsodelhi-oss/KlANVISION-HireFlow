@@ -1,112 +1,141 @@
-"""HireFlow Pydantic v2 schemas for authentication."""
+"""Pydantic v2 schemas for authentication and identity."""
 
 from __future__ import annotations
 
-from typing import Optional, Literal
+from datetime import datetime
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, validator
+import re
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+# Deliberately no dependency on ``email-validator``: a conservative pattern is
+# enough to reject malformed input, and the real authority on whether an address
+# works is delivery, not a client-side regex.
+EMAIL_PATTERN = re.compile(
+    r"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
+    r"@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$"
+)
+
+
+def _clean_email(value: str) -> str:
+    email = value.strip()
+    if len(email) > 254 or not EMAIL_PATTERN.match(email):
+        raise ValueError("invalid email address")
+    return email.lower()
 
 UserRole = Literal["candidate", "recruiter", "admin"]
 
+# Public registration may only create candidate or recruiter accounts. Admin
+# accounts are created by an operator with the CLI bootstrap command.
+PublicRole = Literal["candidate", "recruiter"]
+
 
 class Token(BaseModel):
-    """Response schema for authentication tokens."""
-    access_token: str = Field(..., description="HTTP-only cookie secure access token")
-    token_type: str = Field(default="bearer", description="Token type")
-    expires_in: int = Field(
-        default=30, description="Minutes until access token expires"
-    )
+    """Access token plus the metadata the SPA needs."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int = Field(description="Access token lifetime in seconds")
 
 
 class LoginRequest(BaseModel):
-    """Login request schema."""
-    email: str = Field(..., max_length=254, description="User email address")
-    password: str = Field(..., min_length=8, description="User password")
-    remember: Optional[bool] = Field(
-        default=False, description="Remember me for extended session"
-    )
+    """Login credentials."""
 
-    @validator("email")
-    def validate_email_format(cls, v: str) -> str:
-        """Basic email format validation."""
-        if "@" not in v:
-            raise ValueError("Invalid email format")
-        return v
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, value: str) -> str:
+        return _clean_email(value)
 
 
 class RegisterRequest(BaseModel):
-    """Candidate registration request schema."""
-    email: str = Field(
-        ..., max_length=254, description="User email address", example="candidate@example.com"
-    )
-    password: str = Field(
-        ..., min_length=8, max_length=128, description="User password"
-    )
-    full_name: Optional[str] = Field(
-        None, max_length=200, description="Candidate's full name"
-    )
-    role: UserRole = Field(
-        default="candidate",
-        description="User role (candidate by default, recruiters apply separately)",
-    )
+    """Public registration request.
 
-    @validator("email")
-    def validate_email_format(cls, v: str) -> str:
-        """Basic email format validation."""
-        if "@" not in v:
-            raise ValueError("Invalid email format")
-        return v
+    ``role`` may be candidate or recruiter; ``company_name`` is required for
+    recruiters and is used to create their company on the server.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(min_length=1, max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, value: str) -> str:
+        return _clean_email(value)
+    role: PublicRole = "candidate"
+    company_name: Optional[str] = Field(default=None, max_length=200)
+
+    @model_validator(mode="after")
+    def _validate_password_and_company(self) -> "RegisterRequest":
+        if len(self.password.encode("utf-8")) > 72:
+            # bcrypt only considers the first 72 bytes; reject rather than
+            # silently truncating so two different passwords cannot collide.
+            raise ValueError("Password must be at most 72 bytes long")
+        if not any(char.isdigit() for char in self.password) or not any(
+            char.isalpha() for char in self.password
+        ):
+            raise ValueError("Password must contain both letters and numbers")
+        # Strip surrounding whitespace from the display values.
+        self.full_name = self.full_name.strip()
+        if not self.full_name:
+            raise ValueError("full_name must not be blank")
+        if self.role == "recruiter":
+            if not self.company_name or not self.company_name.strip():
+                raise ValueError("company_name is required for recruiter accounts")
+            self.company_name = self.company_name.strip()
+        else:
+            self.company_name = None
+        return self
 
 
 class RegisterResponse(BaseModel):
-    """Registration response schema."""
-    user_id: str = Field(..., description=" newly created user UUID")
-    email: str = Field(..., description="Registered email address")
-    role: UserRole = Field(..., description="Assigned user role")
-    message: str = Field(
-        ..., description="Confirmation message"
-    )
+    """Registration result. Registration does not sign the user in."""
+
+    user_id: str
+    email: str
+    role: PublicRole
+    message: str = "Account created. Please sign in."
 
 
 class MeResponse(BaseModel):
-    """Current user response schema."""
-    id: str = Field(..., description="User UUID")
-    email: str = Field(..., description="User email")
-    role: UserRole = Field(..., description="User role")
-    is_active: bool = Field(..., description="Whether the user account is active")
-    is_verified: bool = Field(
-        False, description="Whether the user email is verified"
-    )
-    full_name: Optional[str] = Field(
-        None, max_length=200, description="User's full name (if candidate profile)"
-    )
+    """The authenticated caller, resolved from the database on every request."""
 
+    model_config = ConfigDict(from_attributes=True)
 
-class CSRFToken(BaseModel):
-    """CSRF synchronizer token response/schema."""
-    csrf_token: str = Field(
-        ..., description="CSRF token value for state-changing requests"
-    )
+    id: str
+    email: str
+    role: UserRole
+    is_active: bool
+    is_verified: bool
+    full_name: Optional[str] = None
+    # Derived server-side from the recruiter's membership. Clients must treat
+    # this as read-only; it is never accepted back as input.
+    company_id: Optional[str] = None
+    company_name: Optional[str] = None
+    created_at: datetime
 
 
 class PasswordChangeRequest(BaseModel):
-    """Password change request schema."""
-    current_password: str = Field(
-        ..., min_length=8, description="Current user password"
-    )
-    new_password: str = Field(
-        ..., min_length=8, max_length=128, description="New user password"
-    )
-    confirm_new_password: str = Field(
-        ..., min_length=8, max_length=128,
-        description="Confirm new user password"
-    )
+    """Self-service password change."""
 
-    @validator("confirm_new_password")
-    def passwords_match(cls, v: str, values) -> str:
-        """Validate that new passwords match."""
-        if values and "new_password" in values.data:
-            if v != values.data["new_password"]:
-                raise ValueError("Passwords do not match")
-        return v
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_new_password: str = Field(min_length=8, max_length=128)
+
+    @model_validator(mode="after")
+    def _passwords_match(self) -> "PasswordChangeRequest":
+        if self.new_password != self.confirm_new_password:
+            raise ValueError("New passwords do not match")
+        if self.new_password == self.current_password:
+            raise ValueError("New password must differ from the current password")
+        return self

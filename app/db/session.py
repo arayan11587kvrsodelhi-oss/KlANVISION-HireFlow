@@ -1,46 +1,79 @@
-"""Database session management.
+"""Database engine and session management.
 
-Handles SQLAlchemy engine creation, session local, and session dependency
-for FastAPI endpoints. Uses environment variables for database connection.
+Reads the connection string from :mod:`app.config` (never from raw
+``os.getenv``), so ``.env`` values and validation are applied consistently.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from __future__ import annotations
 
-from .base import Base
+from typing import Iterator
 
-import os
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
-# Database URL from environment variable
-# Format: postgresql://user:password@host:port/dbname
-DATABASE_URL = os.getenv("NEON_DSN", "postgresql://postgres:postgres@localhost:5432/hrflow")
+from app.config import get_settings
 
-# Create engine with appropriate settings
-# Neon supports scale-to-zero, so we don't set pool_timeout excessively
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    echo=os.getenv("SQL_ECHO", "0") == "1",
+
+def create_db_engine(dsn: str | None = None, *, echo: bool | None = None) -> Engine:
+    """Create a pooled SQLAlchemy engine for PostgreSQL.
+
+    Args:
+        dsn: Optional override for the configured DSN (used by tests/tools).
+        echo: Optional echo override.
+
+    Returns:
+        A configured :class:`~sqlalchemy.engine.Engine`.
+    """
+    settings = get_settings()
+    url = dsn or settings.NEON_DSN
+    return create_engine(
+        url,
+        pool_pre_ping=True,  # transparently recover from dropped connections
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
+        echo=settings.DB_ECHO if echo is None else echo,
+        future=True,
+    )
+
+
+engine: Engine = create_db_engine()
+
+# SQLAlchemy 2.x: ``autocommit`` was removed; sessions begin implicitly and are
+# committed explicitly by the service layer.
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    expire_on_commit=False,
+    class_=Session,
 )
 
-# Create session local class
-# autocommit=False means we need to explicitly commit
-# autoflush=False means we need to explicitly flush; this prevents
-# unexpected queries from firing
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@event.listens_for(Engine, "connect")
+def _set_utc_timezone(dbapi_connection, connection_record) -> None:
+    """Force every PostgreSQL connection into UTC.
+
+    Keeps ``now()`` server defaults and application timestamps consistent.
+    """
+    try:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("SET TIME ZONE 'UTC'")
+        cursor.close()
+    except Exception:  # pragma: no cover - non-PostgreSQL drivers
+        pass
 
 
-def get_db_session() -> Session:
-    """Dependency that provides a database session.
+def get_db_session() -> Iterator[Session]:
+    """FastAPI dependency yielding a database session.
 
-    Yields a SQLAlchemy Session that is automatically closed after the
-    request completes. Uses try/finally to ensure cleanup even on errors.
-
-    Yields:
-        Session: A SQLAlchemy session instance.
+    The session is rolled back on error and always closed.
     """
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

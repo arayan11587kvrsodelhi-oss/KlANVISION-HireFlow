@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useAuth } from '../hooks/useAuth';
 import { QuickRoleSwitcher } from '../components/common/QuickRoleSwitcher';
 import { getInitials } from '../utils/formatters';
+import { homePathForRole } from '../utils/roles';
 import {
   LayoutDashboard,
   User,
@@ -31,7 +32,8 @@ export const DashboardLayout: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    // `replace` so the back button does not return to a protected page.
+    navigate('/login', { replace: true });
   };
 
   // Build role-specific navigation items
@@ -59,11 +61,17 @@ export const DashboardLayout: React.FC = () => {
     { label: 'Job Moderation', path: '/admin/jobs', icon: CheckSquare },
   ];
 
-  let currentNav = candidateNav;
-  let roleTitle = 'Candidate Portal';
-  let badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+  // Navigation is derived from the server-assigned role. There is no default:
+  // an unknown/absent role never falls back to the candidate menu.
+  let currentNav: typeof candidateNav = [];
+  let roleTitle = '';
+  let badgeColor = 'bg-slate-500/10 text-slate-400 border-slate-500/20';
 
-  if (role === 'recruiter') {
+  if (role === 'candidate') {
+    currentNav = candidateNav;
+    roleTitle = 'Candidate Portal';
+    badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+  } else if (role === 'recruiter') {
     currentNav = recruiterNav;
     roleTitle = 'Employer Workspace';
     badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
@@ -167,11 +175,11 @@ export const DashboardLayout: React.FC = () => {
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-7 h-7 rounded-full bg-blue-700 text-white font-semibold text-xs flex items-center justify-center shrink-0">
-                {getInitials(user?.name || 'Alex')}
+                {getInitials(user?.name || user?.email || 'HF')}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-200 truncate">{user?.name || 'User'}</p>
-                <p className="text-[11px] text-slate-400 truncate capitalize">{role}</p>
+                <p className="text-[11px] text-slate-400 truncate capitalize">{role ?? 'unknown'}</p>
               </div>
             </div>
             <button
@@ -198,6 +206,12 @@ export const DashboardLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              to={homePathForRole(role)}
+              className="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800/70 transition-colors"
+            >
+              My workspace
+            </Link>
             <QuickRoleSwitcher />
             <Link
               to="/jobs"

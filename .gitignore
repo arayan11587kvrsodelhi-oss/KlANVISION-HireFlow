@@ -25,5 +25,19 @@ __pycache__/
 tmp/
 .DS_Store
 
+# Generated at runtime by the app (uploaded resumes) and by local test runs.
+# Both are reproducible from source; never commit them.
+var/
+
+# Local helper scripts (node) — see the commit-hygiene audit for status.
+node/_debug/
+.npm/
+.eslintcache
+
 # IDE
 .vscode/
+tsc_output.txt
+
+e2e/debug-*.mjs
+
+e2e/*.png

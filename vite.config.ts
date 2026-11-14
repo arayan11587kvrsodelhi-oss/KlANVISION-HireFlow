@@ -8,7 +8,7 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {
@@ -17,6 +17,16 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Optional same-origin API proxy. When VITE_API_BASE_URL is left unset,
+      // the client defaults to http://localhost:8000 directly; setting it to
+      // "/api/v1" with this proxy makes the refresh cookie first-party, which
+      // is the closest local approximation of a production deployment.
+      proxy: {
+        '/api': {
+          target: process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000',
+          changeOrigin: false,
+        },
+      },
     },
   };
 });

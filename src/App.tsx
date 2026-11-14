@@ -10,6 +10,7 @@ import { AuthProvider } from './hooks/useAuth';
 // Layouts
 import { PublicLayout } from './layouts/PublicLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 // Public Pages
 import { LandingPage } from './pages/public/LandingPage';
@@ -54,8 +55,16 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
           </Route>
 
-          {/* Candidate Dashboard Routes */}
-          <Route path="/candidate" element={<DashboardLayout />}>
+          {/* Candidate Dashboard Routes. The guard wraps the whole layout so the
+              sidebar/navigation never renders for a wrong-role or anonymous user. */}
+          <Route
+            path="/candidate"
+            element={
+              <ProtectedRoute allow={['candidate']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<CandidateDashboard />} />
             <Route path="profile" element={<ProfileManagementPage />} />
             <Route path="skills" element={<SkillsExperiencePage />} />
@@ -65,7 +74,14 @@ export default function App() {
           </Route>
 
           {/* Recruiter Workspace Routes */}
-          <Route path="/recruiter" element={<DashboardLayout />}>
+          <Route
+            path="/recruiter"
+            element={
+              <ProtectedRoute allow={['recruiter']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<RecruiterDashboard />} />
             <Route path="company" element={<CompanyProfilePage />} />
             <Route path="jobs" element={<ManageJobsPage />} />
@@ -75,7 +91,14 @@ export default function App() {
           </Route>
 
           {/* Admin Governance Routes */}
-          <Route path="/admin" element={<DashboardLayout />}>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allow={['admin']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="candidates" element={<CandidateManagementPage />} />
             <Route path="companies" element={<CompanyManagementPage />} />

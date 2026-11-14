@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Job, WorkplaceType, JobType, ExperienceLevel, JobStatus } from '../../types';
 import { jobService } from '../../services/api';
 import { Button } from '../../components/common/Button';
-import { ArrowLeft, Trash2, Check } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 export const EditJobPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +26,7 @@ export const EditJobPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -63,16 +64,17 @@ export const EditJobPage: React.FC = () => {
     e.preventDefault();
     if (!id) return;
     setIsSaving(true);
+    setErrorMessage(null);
     try {
       await jobService.updateJob(id, {
-        title,
+        title: title.trim(),
         department,
         location,
-        workplaceType,
-        jobType,
-        experienceLevel,
-        salaryMin,
-        salaryMax,
+        workplace_type: workplaceType,
+        job_type: jobType,
+        experience_level: experienceLevel,
+        salary_min: salaryMin,
+        salary_max: salaryMax,
         description,
         status,
         responsibilities,
@@ -82,6 +84,8 @@ export const EditJobPage: React.FC = () => {
       navigate('/recruiter/jobs');
     } catch (err) {
       console.error('Failed to update job', err);
+      const apiError = err as { firstFieldError?: string; message?: string };
+      setErrorMessage(apiError.firstFieldError ?? apiError.message ?? 'Failed to save the job.');
     } finally {
       setIsSaving(false);
     }
@@ -111,6 +115,13 @@ export const EditJobPage: React.FC = () => {
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Back to Manage Jobs</span>
       </button>
+
+      {errorMessage && (
+        <div className="p-3.5 rounded-lg bg-rose-950/50 border border-rose-800/80 text-xs text-rose-300 flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       <div>
         <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">

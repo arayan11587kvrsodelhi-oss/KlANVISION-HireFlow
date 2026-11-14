@@ -25,44 +25,44 @@ import {
 } from 'lucide-react';
 
 export const CandidateDashboard: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const loadDashboardData = async () => {
       setIsLoading(true);
+      setErrorMessage(null);
       try {
-        const candidateId = profile?.id ?? user?.id;
-if (!candidateId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Candidate Identity"
-        message="Your candidate profile could not be loaded. Please complete your profile or contact your administrator."
-      />
-    </div>
-  );
-}
-        const apps = await applicationService.getCandidateApplications(candidateId);
+        // The API resolves the candidate from the access token, so no id is
+        // passed from the browser.
+        const [apps, allJobs, savedIds] = await Promise.all([
+          applicationService.getCandidateApplications(),
+          jobService.getJobs(),
+          jobService.getSavedJobIds(),
+        ]);
+        if (cancelled) return;
         setApplications(apps);
-
-        const allJobs = await jobService.getJobs();
         setRecommendedJobs(allJobs.slice(0, 3));
-
-        const savedIds = await jobService.getSavedJobIds();
         setSavedJobs(allJobs.filter((j) => savedIds.includes(j.id)).slice(0, 3));
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load candidate dashboard', err);
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load your dashboard.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     loadDashboardData();
-  }, [profile]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeInterviews = applications.filter((a) => a.status === 'Interview');
   const inScreening = applications.filter((a) => a.status === 'Shortlisted');
@@ -86,9 +86,16 @@ if (!candidateId) {
 
   return (
     <div className="space-y-6">
-      <NoticeBanner
+    {errorMessage && (
+        <NoticeBanner badge="LOAD ERROR" message={errorMessage} />
+    )}
+    <NoticeBanner
         badge="Candidate Workspace"
-        message="Reviewing active candidate dossier for Alex Morgan · Synchronized with live recruitment pipelines."
+        message={
+        profile?.fullName
+          ? `Reviewing your dossier, ${profile.fullName} · synchronized with live recruitment pipelines.`
+          : 'Complete your profile so recruiters can review your dossier.'
+        }
       />
 
       {/* Top Welcome Banner */}
@@ -99,10 +106,11 @@ if (!candidateId) {
             <span>Candidate Dossier & Sourcing Stream</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-            Welcome back, {profile?.fullName || user?.name || 'Alex'}
+            Welcome back, {profile?.fullName || 'Candidate'}
           </h1>
           <p className="text-xs md:text-sm text-slate-400 max-w-xl">
-            {profile?.headline || 'Staff Frontend Engineer & Design Systems Specialist'} · {profile?.location || 'San Francisco, CA'}
+            {profile?.headline || 'Add a professional headline to stand out'}
+            {profile?.location ? ` · ${profile.location}` : ''}
           </p>
         </div>
 

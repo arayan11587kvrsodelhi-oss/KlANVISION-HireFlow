@@ -7,7 +7,10 @@ export interface User {
   role: UserRole;
   avatar?: string;
   title?: string;
+  /** Derived server-side from the recruiter's company membership (read-only). */
   companyId?: string;
+  companyName?: string;
+  isVerified?: boolean;
   createdAt: string;
 }
 
@@ -130,7 +133,8 @@ export interface CandidateProfile {
     fileName: string;
     fileSize: string;
     uploadedAt: string;
-    previewUrl?: string;
+    /** Authenticated API path that streams the file (never a static/public URL). */
+    downloadUrl?: string;
   } | null;
 }
 
@@ -154,6 +158,189 @@ export interface AdminMetrics {
   totalCompanies: number;
   totalJobs: number;
   activeApplications: number;
-  hiredThisMonth: number;
-  platformGrowth: string;
+  hiredTotal: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* API transport types                                                 */
+/* ------------------------------------------------------------------ */
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  full_name: string;
+  role: 'candidate' | 'recruiter';
+  company_name?: string;
+}
+
+export interface AuthToken {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  role: UserRole;
+  is_active: boolean;
+  is_verified: boolean;
+  full_name: string | null;
+  company_id: string | null;
+  company_name: string | null;
+  created_at: string;
+}
+
+export interface JobInput {
+  title: string;
+  department?: string | null;
+  location?: string | null;
+  workplace_type: WorkplaceType;
+  job_type: JobType;
+  experience_level: ExperienceLevel;
+  salary_min: number;
+  salary_max: number;
+  salary_currency?: string;
+  description: string;
+  responsibilities?: string[];
+  requirements?: string[];
+  benefits?: string[];
+  status?: JobStatus;
+}
+
+/** Server payload shape for a job (snake_case, as returned by FastAPI). */
+export interface ApiJob {
+  id: string;
+  title: string;
+  company_id: string;
+  company_name: string;
+  company_logo: string | null;
+  company_verified: boolean;
+  location: string | null;
+  workplace_type: WorkplaceType;
+  job_type: JobType;
+  experience_level: ExperienceLevel;
+  salary_min: number;
+  salary_max: number;
+  salary_currency: string;
+  department: string | null;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  benefits: string[];
+  posted_date: string;
+  status: JobStatus;
+  applicants_count: number;
+  featured: boolean;
+}
+
+export interface ApiCompany {
+  id: string;
+  name: string;
+  description: string | null;
+  website: string | null;
+  industry: string | null;
+  location: string | null;
+  employee_count: string | null;
+  logo: string | null;
+  is_verified: boolean;
+  open_jobs_count: number;
+  created_at: string;
+}
+
+export interface ApiApplication {
+  id: string;
+  job_id: string;
+  job_title: string;
+  company_id: string;
+  company_name: string;
+  company_logo: string | null;
+  candidate_id: string;
+  candidate_name: string;
+  candidate_email: string;
+  candidate_phone: string | null;
+  candidate_headline: string | null;
+  resume_file_name: string | null;
+  resume_size: string | null;
+  resume_download_url: string | null;
+  cover_letter: string | null;
+  applied_date: string;
+  status: ApplicationStatus;
+  stage_updated_at: string;
+  notes: string | null;
+  rating: number | null;
+  history: { previous_status: string; new_status: string; changed_at: string }[];
+}
+
+export interface ApiResume {
+  id: string;
+  file_name: string;
+  file_size: string;
+  mimetype: string | null;
+  uploaded_at: string;
+  download_url: string;
+}
+
+export interface ApiCandidateProfile {
+  full_name: string | null;
+  headline: string | null;
+  bio: string | null;
+  phone: string | null;
+  location: string | null;
+  website: string | null;
+  github: string | null;
+  linkedin: string | null;
+  skills: string[];
+  experience: {
+    id: string;
+    role: string;
+    company: string;
+    location: string | null;
+    start_date: string;
+    end_date: string | null;
+    current: boolean;
+    description: string | null;
+  }[];
+  education: {
+    id: string;
+    degree: string;
+    field: string | null;
+    institution: string;
+    start_year: string | null;
+    end_year: string | null;
+    gpa: string | null;
+  }[];
+  resume: {
+    id: string;
+    file_name: string;
+    file_size: string;
+    uploaded_at: string;
+    download_url: string;
+  } | null;
+  updated_at: string | null;
+}
+
+export interface ApiAdminCandidate {
+  id: string;
+  email: string;
+  full_name: string | null;
+  headline: string | null;
+  location: string | null;
+  skills: string[];
+  applications_count: number;
+  is_active: boolean;
+  registered_date: string;
 }

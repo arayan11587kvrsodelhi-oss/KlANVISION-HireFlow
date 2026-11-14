@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Job, Company, CandidateProfile } from '../../types';
+import { Job, Company } from '../../types';
 import { jobService, companyService, applicationService, profileService } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { formatSalary, formatDate, getWorkplaceBadgeClass } from '../../utils/formatters';
@@ -25,14 +25,16 @@ import {
 
 export const JobDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, profile } = useAuth();
+  const { user, profile, role } = useAuth();
   const navigate = useNavigate();
 
   const [job, setJob] = useState<Job | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   // Application Modal state
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
@@ -43,43 +45,70 @@ export const JobDetailsPage: React.FC = () => {
   const [alreadyApplied, setAlreadyApplied] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchJobData = async () => {
       if (!id) return;
       setIsLoading(true);
+      setLoadError(null);
       try {
         const foundJob = await jobService.getJobById(id);
+        if (cancelled) return;
         setJob(foundJob);
         if (foundJob) {
-          const foundCompany = await companyService.getCompanyById(foundJob.companyId);
+          const [foundCompany, appliedIds] = await Promise.all([
+            companyService.getCompanyById(foundJob.companyId),
+            // Candidates get their applied/saved state; other roles/visitors do not.
+            role === 'candidate' ? jobService.getAppliedJobIds() : Promise.resolve([]),
+          ]);
+          if (cancelled) return;
           setCompany(foundCompany);
+          setAlreadyApplied(appliedIds.includes(foundJob.id));
 
-          // Check saved status
-          const savedIds = await jobService.getSavedJobIds();
-          setIsSaved(savedIds.includes(foundJob.id));
-
-          // Check if candidate already applied
-          if (profile) {
-            const apps = await applicationService.getCandidateApplications(profile.id);
-            setAlreadyApplied(apps.some((a) => a.jobId === foundJob.id));
-            if (profile.resume) {
-              setSelectedResumeName(profile.resume.fileName);
-            }
+          if (role === 'candidate') {
+            const savedIds = await jobService.getSavedJobIds();
+            if (!cancelled) setIsSaved(savedIds.includes(foundJob.id));
           }
+          if (profile?.resume) setSelectedResumeName(profile.resume.fileName);
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load job details', err);
+        setLoadError(err instanceof Error ? err.message : 'Failed to load this position.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchJobData();
-  }, [id, profile]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, profile, role]);
 
   const handleToggleSave = async () => {
     if (!job) return;
-    await jobService.toggleSaveJob(job.id);
-    setIsSaved(!isSaved);
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(`/jobs/${job.id}`)}`);
+      return;
+    }
+    try {
+      const saved = await jobService.toggleSaveJob(job.id);
+      setIsSaved(saved);
+    } catch (err) {
+      console.error('Failed to update bookmark', err);
+    }
+  };
+
+  const requireCandidate = (): boolean => {
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(`/jobs/${job?.id ?? ''}`)}`);
+      return false;
+    }
+    if (role !== 'candidate') {
+      setApplyError('Only candidate accounts can apply to positions.');
+      return false;
+    }
+    return true;
   };
 
   const handleShare = () => {
@@ -90,43 +119,26 @@ export const JobDetailsPage: React.FC = () => {
 
   const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!job) return;
+    if (!job || !requireCandidate()) return;
+
+    setApplyError(null);
+
+    if (!profile?.resume) {
+      setApplyError('Upload a resume in the Resume Center before applying.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      // Use profile from auth or create default candidate dossier
-      const candidateData: CandidateProfile = profile || {
-        id: 'cand-alex',
-        fullName: user?.name || 'Alex Morgan',
-        headline: 'Staff Frontend Engineer',
-        email: user?.email || 'alex.morgan@example.com',
-        phone: '+1 (415) 555-0192',
-        location: 'San Francisco, CA',
-        bio: 'Senior engineer',
-        website: 'https://alexmorgan.dev',
-        github: 'https://github.com/alexmorgan-dev',
-        linkedin: 'https://linkedin.com/in/alexmorgan-eng',
-        skills: ['React', 'TypeScript'],
-        experience: [],
-        education: [],
-        resume: {
-          fileName: selectedResumeName || 'Alex_Morgan_Staff_Resume_2026.pdf',
-          fileSize: '248 KB',
-          uploadedAt: new Date().toISOString().split('T')[0],
-        },
-      };
-
-      await applicationService.applyToJob({
-        job,
-        candidate: candidateData,
-        coverLetter,
-        resumeFileName: selectedResumeName || candidateData.resume?.fileName,
-      });
-
+      // The server identifies the candidate from the access token and attaches
+      // the active resume itself; nothing about the applicant is sent from here.
+      await applicationService.applyToJob(job.id, coverLetter);
       setApplicationSuccess(true);
       setAlreadyApplied(true);
     } catch (err) {
       console.error('Failed to apply', err);
+      const apiError = err as { firstFieldError?: string; message?: string };
+      setApplyError(apiError.firstFieldError ?? apiError.message ?? 'Failed to submit application.');
     } finally {
       setIsSubmitting(false);
     }
@@ -411,6 +423,12 @@ export const JobDetailsPage: React.FC = () => {
         </aside>
       </div>
 
+      {loadError && (
+        <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs">
+          {loadError}
+        </div>
+      )}
+
       {/* Interactive Application Modal */}
       <Modal
         isOpen={isApplyModalOpen}
@@ -421,7 +439,7 @@ export const JobDetailsPage: React.FC = () => {
         title={applicationSuccess ? 'Application Submitted!' : `Apply for ${job.title}`}
         description={
           applicationSuccess
-            ? 'Your application dossier has been delivered directly to the CloudScale Labs recruitment pipeline.'
+            ? `Your application dossier has been delivered to the ${job.companyName} recruitment pipeline.`
             : `${job.companyName} · ${job.location}`
         }
         maxWidth="lg"
@@ -459,6 +477,11 @@ export const JobDetailsPage: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleApplySubmit} className="space-y-4">
+            {applyError && (
+              <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs">
+                {applyError}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
@@ -466,9 +489,9 @@ export const JobDetailsPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  required
-                  defaultValue={profile?.fullName || user?.name || 'Alex Morgan'}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                readOnly
+                value={profile?.fullName || user?.name || ''}
+                className="w-full bg-slate-900/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none"
                 />
               </div>
               <div>
@@ -477,9 +500,9 @@ export const JobDetailsPage: React.FC = () => {
                 </label>
                 <input
                   type="email"
-                  required
-                  defaultValue={profile?.email || user?.email || 'alex.morgan@example.com'}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  readOnly
+                  value={profile?.email || user?.email || ''}
+                  className="w-full bg-slate-900/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none"
                 />
               </div>
             </div>
@@ -490,9 +513,13 @@ export const JobDetailsPage: React.FC = () => {
               </label>
               <input
                 type="tel"
-                defaultValue={profile?.phone || '+1 (415) 555-0192'}
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                readOnly
+                value={profile?.phone || 'Add a phone number on your profile page'}
+                className="w-full bg-slate-900/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none"
               />
+              <p className="text-[11px] text-slate-500 mt-1">
+                Your submitted dossier comes from your HireFlow profile.
+              </p>
             </div>
 
             {/* Resume Selection / Upload */}
@@ -507,10 +534,12 @@ export const JobDetailsPage: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-slate-200">
-                      {selectedResumeName || profile?.resume?.fileName || 'Alex_Morgan_Staff_Resume_2026.pdf'}
+                      {profile?.resume?.fileName || selectedResumeName || 'No resume on file'}
                     </div>
                     <div className="text-[11px] text-slate-400">
-                      {profile?.resume?.fileSize || '248 KB'} · Active Profile Resume
+                      {profile?.resume
+                        ? `${profile.resume.fileSize} · Active Profile Resume`
+                        : 'Upload one in the Resume Center before applying'}
                     </div>
                   </div>
                 </div>

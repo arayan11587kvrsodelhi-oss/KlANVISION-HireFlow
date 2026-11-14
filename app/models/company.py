@@ -1,138 +1,107 @@
-"""SQLAlchemy models for company-related entities.
+﻿"""SQLAlchemy models for company-related entities.
 
-Defines the ``companies`` and ``recruiter_company_memberships`` tables.
-Companies represent employer organizations. Recruiters belong to companies
-through membership records that enforce company-level RBAC.
+A company is an employer organisation. Recruiters belong to a company through a
+membership row, which is what every company-scoped authorization check resolves
+against. Company ids are never accepted from the client: they are derived from
+the authenticated recruiter's membership.
 """
 
+from __future__ import annotations
+
 from sqlalchemy import (
-    Column,
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Index,
     String,
     Text,
-    ForeignKey,
     UniqueConstraint,
-    DateTime,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy import func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..db.base import Base
+from app.db.base import Base
+from app.db.types import UTCDateTime, new_uuid, utcnow
 
 
 class Company(Base):
-    """Company / employer organization.
-
-    Represents an employer organization that recruits candidates.
-    Each company has an owner (recruiter) and multiple members.
-    """
-
     __tablename__ = "companies"
+    __table_args__ = (Index("ix_companies_name", "name"),)
 
-    id = Column(
-        String(36),
-        primary_key=True,
-        unique=True,
-        index=True,
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    website: Mapped[str | None] = mapped_column(String(200))
+    industry: Mapped[str | None] = mapped_column(String(120))
+    location: Mapped[str | None] = mapped_column(String(200))
+    employee_count: Mapped[str | None] = mapped_column(String(40))
+    logo: Mapped[str | None] = mapped_column(String(500))
+    # Only admins may change this. Defaults to False (pending accreditation).
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    created_at: Mapped[object] = mapped_column(
+        UTCDateTime, nullable=False, default=utcnow, server_default=func.now()
+    )
+    updated_at: Mapped[object] = mapped_column(
+        UTCDateTime,
         nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
+        server_default=func.now(),
     )
 
-    name = Column(String(200), nullable=False)
-
-    description = Column(Text, nullable=True)
-
-    website = Column(String(200), nullable=True)
-
-    created_at = Column(
-        DateTime, server_default="now()", nullable=False
-    )
-
-    updated_at = Column(
-        DateTime, server_default="now()", onupdate="now()", nullable=False
-    )
-
-    # Relationships
-    owner = relationship(
-        "RecruiterProfile",
-        back_populates="company_owner",
-        foreign_keys="[recruiter_company_memberships.recruiter_id]",
-    )
-
-    members = relationship(
+    memberships: Mapped[list["RecruiterCompanyMembership"]] = relationship(
         "RecruiterCompanyMembership",
         back_populates="company",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
-
-    @property
-    def owner_recruiter(self):
-        """Convenience: get the owning recruiter profile."""
-        membership = self.members.filter(
-            "RecruiterCompanyMembership.role == \"owner\""
-        ).first()
-        return membership.recruiter if membership else None
+    jobs: Mapped[list["Job"]] = relationship(
+        "Job", back_populates="company", passive_deletes=True
+    )
 
 
 class RecruiterCompanyMembership(Base):
     """Membership link between a recruiter and a company.
 
-    Enforces company-level RBAC. A recruiter can have one of:
-    - owner: full control of the company
-    - admin: administrative privileges
-    - member: read/write access within company scope
-
-    The combination of (recruiter_id, company_id) is unique.
+    (recruiter_id, company_id) is unique. ``role`` is one of owner/admin/member
+    and is enforced by a CHECK constraint.
     """
 
     __tablename__ = "recruiter_company_memberships"
-
-    id = Column(
-        String(36),
-        primary_key=True,
-        unique=True,
-        index=True,
-        nullable=False,
+    __table_args__ = (
+        UniqueConstraint("recruiter_id", "company_id", name="uq_recruiter_company"),
+        CheckConstraint("role IN ('owner','admin','member')", name="role_allowed"),
+        Index("ix_rcm_company_role", "company_id", "role"),
     )
 
-    recruiter_id = Column(
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    recruiter_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("recruiter_profiles.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
-
-    company_id = Column(
-        String(36),
-        ForeignKey("companies.id", ondelete="CASCADE"),
+    company_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="owner")
+    joined_at: Mapped[object] = mapped_column(
+        UTCDateTime, nullable=False, default=utcnow, server_default=func.now()
+    )
+    updated_at: Mapped[object] = mapped_column(
+        UTCDateTime,
         nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
+        server_default=func.now(),
     )
 
-    role = Column(
-        String(20),
-        nullable=False,
-        default="member",
-    )  # owner, admin, member
-
-    joined_at = Column(
-        DateTime, server_default="now()", nullable=False
+    recruiter: Mapped["RecruiterProfile"] = relationship(
+        "RecruiterProfile", back_populates="memberships"
     )
-
-    updated_at = Column(
-        DateTime, server_default="now()", onupdate="now()", nullable=False
-    )
-
-    # Unique constraint: one recruiter per company
-    __table_args__ = (
-        UniqueConstraint("recruiter_id", "company_id", name="uq_recruiter_company"),
-    )
-
-    # Relationships
-    recruiter = relationship(
-        "RecruiterProfile",
-        back_populates="company_memberships",
-    )
-
-    company = relationship(
-        "Company",
-        back_populates="members",
-    )
+    company: Mapped["Company"] = relationship("Company", back_populates="memberships")
 
     @property
     def is_owner(self) -> bool:
