@@ -1,3 +1,4 @@
 """HireFlow API package initialization."""
 
-from app.api.v1 import __all__  # noqa: F401
+# Routers are exported from ``app.api.v1``. Importing a non-existent
+# ``__all__`` symbol here previously prevented the application from starting.

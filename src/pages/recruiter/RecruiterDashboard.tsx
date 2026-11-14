@@ -24,52 +24,55 @@ export const RecruiterDashboard: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const loadRecruiterData = async () => {
       setIsLoading(true);
+      setErrorMessage(null);
       try {
-        const companyId = user?.companyId;
-if (!companyId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Company Assignment"
-        message="Please complete your company profile to access recruiter operations. Contact your administrator if this is incorrect."
-      />
-      {/* Simplified view showing need for company assignment */};
-    </div>
-  );
-}
-        const allJobs = await jobService.getJobs({ includeAll: true });
-        const companyJobs = allJobs.filter((j) => j.companyId === companyId);
-        setJobs(companyJobs.length ? companyJobs : allJobs);
-
-        const allApps = await applicationService.getRecruiterApplications(companyId);
-        setApplications(allApps);
+        // Both endpoints are scoped server-side to the recruiter's company; the
+        // browser never names a company.
+        const [companyJobs, companyApps] = await Promise.all([
+          jobService.getMyCompanyJobs(),
+          applicationService.getRecruiterApplications(),
+        ]);
+        if (cancelled) return;
+        setJobs(companyJobs);
+        setApplications(companyApps);
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load recruiter data', err);
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load your workspace.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     loadRecruiterData();
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const inInterview = applications.filter((a) => a.status === 'Interview').length;
   const inOffer = applications.filter((a) => a.status === 'Selected').length;
 
   return (
     <div className="space-y-6">
-      <NoticeBanner message="Sample Recruiter Workspace: Evaluation mode active for CloudScale Labs. Postings and candidate stages update in simulated memory." />
+      {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
+      <NoticeBanner
+        badge="Employer Workspace"
+        message={`Managing requisitions and applicants for ${user?.companyName ?? 'your company'}.`}
+      />
 
       {/* Top Banner */}
       <div className="p-6 md:p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-purple-950/40 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-purple-400">
             <Briefcase className="w-4 h-4" />
-            <span>Employer Talent Hub · CloudScale Labs</span>
+            <span>Employer Talent Hub · {user?.companyName ?? 'Your company'}</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
             Recruiter Control Center
@@ -103,7 +106,9 @@ if (!companyId) {
           <div className="text-2xl font-bold font-mono text-white tabular-nums">
             {jobs.length}
           </div>
-          <div className="text-[11px] text-slate-400">Across 3 departments</div>
+          <div className="text-[11px] text-slate-400">
+            {new Set(jobs.map((j) => j.department).filter(Boolean)).size} departments
+          </div>
         </div>
 
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
@@ -125,7 +130,7 @@ if (!companyId) {
           <div className="text-2xl font-bold font-mono text-amber-400 tabular-nums">
             {inInterview}
           </div>
-          <div className="text-[11px] text-slate-400">Scheduled this week</div>
+          <div className="text-[11px] text-slate-400">In technical review</div>
         </div>
 
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
@@ -136,7 +141,7 @@ if (!companyId) {
           <div className="text-2xl font-bold font-mono text-emerald-400 tabular-nums">
             {inOffer}
           </div>
-          <div className="text-[11px] text-slate-400">Pending candidate signature</div>
+          <div className="text-[11px] text-slate-400">Selected candidates</div>
         </div>
       </div>
 

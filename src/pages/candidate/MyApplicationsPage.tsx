@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
 import { Application, ApplicationStatus, APPLICATION_STATUSES } from '../../types';
 import { applicationService } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
@@ -22,6 +21,7 @@ import { NoticeBanner } from '../../components/common/NoticeBanner';
 
 
 import { EmptyState } from '../../components/common/EmptyState';
+
 import {
   Send,
   Building2,
@@ -35,38 +35,35 @@ import {
 } from 'lucide-react';
 
 export const MyApplicationsPage: React.FC = () => {
-  const { user, profile } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | ApplicationStatus>('all');
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchApps = async () => {
       setIsLoading(true);
+      setErrorMessage(null);
       try {
-        const candidateId = profile?.id ?? user?.id;
-if (!candidateId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Candidate Identity"
-        message="Your candidate profile could not be loaded. Please complete your profile or contact your administrator."
-      />
-    </div>
-  );
-}
-        const apps = await applicationService.getCandidateApplications(candidateId);
-        setApplications(apps);
+        // Scoped server-side to the token's user.
+        const apps = await applicationService.getCandidateApplications();
+        if (!cancelled) setApplications(apps);
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load applications', err);
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load your applications.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchApps();
-  }, [profile]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredApps = applications.filter((app) => {
     if (activeFilter === 'all') return true;
@@ -128,6 +125,8 @@ if (!candidateId) {
           );
         })}
       </div>
+
+      {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
 
       {/* Applications List */}
       {isLoading ? (

@@ -1,0 +1,115 @@
+name: CI
+
+# Validation-only pipeline. It never deploys: staging deploys are a separate,
+# manual, human-approved procedure (see STAGING_DEPLOYMENT_PLAN.md §5).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch/PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal token: read the repo, nothing else. No deploy targets, no secrets.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (pytest + Alembic)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322ed8b7dddaee1c  # v5.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+         python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Start PostgreSQL 16
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres createdb -O postgres hireflow_test
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h localhost -U postgres -d hireflow_test; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::PostgreSQL did not become ready"
+          exit 1
+
+      - name: Apply migrations to the CI test database
+        env:
+          # `alembic/env.py` reads ALEMBIC_DATABASE_URL in preference to app
+          # settings, so migrations run against the CI database without touching
+          # application configuration. The suite's `_test` interlock is intact.
+          ALEMBIC_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
+        run: |
+          alembic upgrade head
+          alembic current
+          alembic check
+
+      - name: Run backend test suite
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
+          SECRET_KEY: ci-only-signing-key-0123456789abcdef0123456789abcdef
+          ENVIRONMENT: development
+          RESUME_STORAGE_DIR: /tmp/hireflow-ci-resumes
+        run: pytest -p no:cacheprovider --tb=short
+
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322ed8b7dddaee1c  # v5.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d93f38eb988fd35b8c4bc7  # v6.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Production build
+        # The SPA is built without a VITE_API_BASE_URL here: the CI build only
+        # proves the bundle compiles. The real value is set at deploy time and
+        # requires a rebuild (documented in STAGING_DEPLOYMENT_PLAN.md §3).
+        run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error

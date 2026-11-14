@@ -1,13 +1,23 @@
-"""SQLAlchemy declarative base.
+"""SQLAlchemy declarative base and shared column conventions.
 
- Creates the Base class that all SQLAlchemy models will inherit from.
- This is the foundation for the ORM layer.
+Every model inherits from :class:`Base`. Constraint naming conventions are set
+so Alembic produces stable, reviewable constraint names (and so
+``alembic/env.py`` can diff autogenerate output reliably).
 """
 
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import MetaData
+from sqlalchemy.orm import DeclarativeBase
 
-Base = declarative_base()
+NAMING_CONVENTION = {
+    "ix": "ix_%(table_name)s_%(column_0_N_name)s",
+    "uq": "uq_%(table_name)s_%(column_0_N_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
 
-# Convention for naming constraints to avoid automatic naming
-# prefix issues. This helps Alembic generate consistent constraint names.
-# From: https://docs.sqlalchemy.org/en/10/orm/mapping_config.html#configure-constraint-naming
+
+class Base(DeclarativeBase):
+    """Declarative base for all HireFlow ORM models."""
+
+    metadata = MetaData(naming_convention=NAMING_CONVENTION)

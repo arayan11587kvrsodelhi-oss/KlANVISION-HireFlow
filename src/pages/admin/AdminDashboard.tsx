@@ -6,16 +6,12 @@ import { formatDate } from '../../utils/formatters';
 import { Button } from '../../components/common/Button';
 import { NoticeBanner } from '../../components/common/NoticeBanner';
 import {
-  ShieldAlert,
   Users,
   Building2,
   Briefcase,
   TrendingUp,
   ShieldCheck,
   ArrowRight,
-  CheckCircle2,
-  AlertTriangle,
-  Server,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -23,30 +19,45 @@ export const AdminDashboard: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchAdminData = async () => {
       setIsLoading(true);
+      setErrorMessage(null);
       try {
-        const m = await adminService.getMetrics();
+        const [m, compList, jobList] = await Promise.all([
+          adminService.getMetrics(),
+          companyService.getCompanies(),
+          jobService.getJobs(),
+        ]);
+        if (cancelled) return;
         setMetrics(m);
-        const compList = await companyService.getCompanies();
         setCompanies(compList);
-        const jobList = await jobService.getJobs();
         setJobs(jobList);
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load admin metrics', err);
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load platform metrics.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchAdminData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <div className="space-y-6">
-      <NoticeBanner message="Sample Administration Console: Platform moderation and governance actions update simulated evaluation records in memory." />
+      {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
+      <NoticeBanner
+        badge="Platform Administration"
+        message="Metrics below are computed live from the HireFlow database."
+      />
 
       {/* Top Banner */}
       <div className="p-6 md:p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -81,14 +92,14 @@ export const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Sample Candidate Profiles</span>
+            <span>Candidate Accounts</span>
             <Users className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-2xl font-bold font-mono text-white tabular-nums">
-            {metrics?.totalCandidates.toLocaleString() || '1,842'}
+            {metrics ? metrics.totalCandidates.toLocaleString() : '—'}
           </div>
           <div className="text-[11px] text-slate-400">
-            Evaluation directory
+            Registered candidates
           </div>
         </div>
 
@@ -98,20 +109,20 @@ export const AdminDashboard: React.FC = () => {
             <Building2 className="w-4 h-4 text-purple-400" />
           </div>
           <div className="text-2xl font-bold font-mono text-purple-400 tabular-nums">
-            {metrics?.totalCompanies || companies.length}
+            {metrics ? metrics.totalCompanies : companies.length}
           </div>
-          <div className="text-[11px] text-slate-400">Accredited tech employers</div>
+          <div className="text-[11px] text-slate-400">Registered employers</div>
         </div>
 
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Requisitions in Moderation</span>
+            <span>Job Requisitions</span>
             <Briefcase className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-bold font-mono text-white tabular-nums">
-            {metrics?.totalJobs || jobs.length}
+            {metrics ? metrics.totalJobs : jobs.length}
           </div>
-          <div className="text-[11px] text-slate-400">Active postings board</div>
+          <div className="text-[11px] text-slate-400">All postings incl. drafts</div>
         </div>
 
         <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
@@ -120,9 +131,11 @@ export const AdminDashboard: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-bold font-mono text-amber-400 tabular-nums">
-            {metrics?.activeApplications || '6'}
+            {metrics ? metrics.activeApplications : '—'}
           </div>
-          <div className="text-[11px] text-slate-400">Platform throughput</div>
+          <div className="text-[11px] text-slate-400">
+            {metrics ? `${metrics.hiredTotal} selected in total` : 'Excludes rejected'}
+          </div>
         </div>
       </div>
 
@@ -173,41 +186,52 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* System Architecture & FastAPI Readiness */}
+        {/* Recently published requisitions */}
         <div className="lg:col-span-6 space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <div>
               <h2 className="text-base font-semibold text-white tracking-tight">
-                Backend Architecture Specification
+                Recently Published Requisitions
               </h2>
-              <p className="text-xs text-slate-400">Ready for FastAPI REST endpoints</p>
+              <p className="text-xs text-slate-400">Latest listings across all employers</p>
             </div>
-            <span className="text-xs font-mono text-emerald-400">Ready</span>
+            <Link to="/admin/jobs" className="text-xs text-blue-400 hover:text-blue-300">
+              Moderate all
+            </Link>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                <Server className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">FastAPI Service Abstraction</h3>
-                <p className="text-xs text-slate-400">
-                  Zero UI refactoring required to connect Python endpoints.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1">
-              <div>GET /api/v1/jobs - Filterable query schema</div>
-              <div>POST /api/v1/jobs - Employer posting payload</div>
-              <div>POST /api/v1/applications - Multipart dossier upload</div>
-              <div>PATCH /api/v1/applications/{'{id}'}/status - State machine</div>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed">
-              HireFlow adheres to clean service contracts (`src/services/api.ts`). Replace the client method bodies with Axios or Fetch calls when your FastAPI backend is deployed.
-            </p>
+          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+            {isLoading ? (
+              [1, 2, 3].map((n) => (
+                <div key={n} className="h-12 rounded-lg bg-slate-950/70 animate-pulse" />
+              ))
+            ) : jobs.length === 0 ? (
+              <p className="text-xs text-slate-400">
+                No requisitions have been published yet. Employers appear here once they post a role.
+              </p>
+            ) : (
+              jobs.slice(0, 5).map((job) => (
+                <div
+                  key={job.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950/60 border border-slate-800"
+                >
+                  <div className="min-w-0">
+                    <Link
+                      to={`/jobs/${job.id}`}
+                      className="text-xs font-semibold text-white hover:text-blue-400 truncate block"
+                    >
+                      {job.title}
+                    </Link>
+                    <div className="text-[11px] text-slate-400 truncate">
+                      {job.companyName} · {formatDate(job.postedDate)}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded border border-slate-700 text-slate-300 shrink-0">
+                    {job.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

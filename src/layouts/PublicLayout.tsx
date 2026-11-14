@@ -2,22 +2,21 @@ import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { QuickRoleSwitcher } from '../components/common/QuickRoleSwitcher';
-import { ArrowRight, Sparkles, Briefcase } from 'lucide-react';
+import { homePathForRole } from '../utils/roles';
+import { ArrowRight, Briefcase } from 'lucide-react';
 
 export const PublicLayout: React.FC = () => {
   const { user, role } = useAuth();
   const location = useLocation();
 
-  const getDashboardLink = () => {
-    if (role === 'admin') return '/admin';
-    if (role === 'recruiter') return '/recruiter';
-    return '/candidate';
-  };
+  const getDashboardLink = () => homePathForRole(role);
 
+  // Public links only. The recruiter workspace and admin console are role-
+  // protected areas; anonymous visitors are sent to the sign-in flow instead of
+  // being dropped onto a dashboard they cannot use (or, worse, that leaked data).
   const navLinks = [
     { label: 'Explore Jobs', path: '/jobs' },
-    { label: 'For Recruiters', path: '/recruiter' },
-    { label: 'Admin Console', path: '/admin' },
+    { label: 'For Recruiters', path: '/register?role=recruiter' },
   ];
 
   return (
@@ -123,13 +122,12 @@ export const PublicLayout: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="text-slate-200 font-semibold mb-3 tracking-wide">Governance & Integration</h4>
-            <p className="text-slate-400 leading-relaxed mb-3">
-              Standardized frontend API layer configured for direct FastAPI REST endpoints (/api/v1).
-            </p>
-            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
-              API Specification: OpenAPI 3.1
-            </div>
+            <h4 className="text-slate-200 font-semibold mb-3 tracking-wide">Platform</h4>
+            <ul className="space-y-2">
+              <li><Link to="/jobs" className="hover:text-slate-200 transition-colors">Browse All Openings</Link></li>
+              <li><Link to="/register?role=recruiter" className="hover:text-slate-200 transition-colors">Hire on HireFlow</Link></li>
+              <li><Link to="/login" className="hover:text-slate-200 transition-colors">Sign In</Link></li>
+            </ul>
           </div>
         </div>
 

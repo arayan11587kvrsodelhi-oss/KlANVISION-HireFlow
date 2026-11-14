@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { Application, ApplicationStage, Job } from '../../types';
+import { Application, ApplicationStage, APPLICATION_STATUSES, Job } from '../../types';
 import { applicationService, jobService } from '../../services/api';
 import { formatDate, getInitials, getStageLabel } from '../../utils/formatters';
 import { ApplicationStageBadge } from '../../components/common/Badge';
@@ -23,7 +22,6 @@ import {
 } from 'lucide-react';
 
 export const ApplicantsListPage: React.FC = () => {
-  const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('All');
@@ -38,27 +36,23 @@ export const ApplicantsListPage: React.FC = () => {
   const [modalRating, setModalRating] = useState<number>(4);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateSaved, setUpdateSaved] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const fetchApplicants = async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
-      const companyId = user?.companyId;
-if (!companyId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Company Assignment"
-        message="Please complete your company profile to view applicants. Contact your administrator if this is incorrect."
-      />
-    </div>
-  );
-}
-      const allApps = await applicationService.getRecruiterApplications(companyId);
-      setApplications(allApps);
-      const allJobs = await jobService.getJobs();
-      setJobs(allJobs);
+      // Applicants and the job filter list are both scoped to my company.
+      const [companyApps, companyJobs] = await Promise.all([
+        applicationService.getRecruiterApplications(),
+        jobService.getMyCompanyJobs(),
+      ]);
+      setApplications(companyApps);
+      setJobs(companyJobs);
     } catch (err) {
       console.error('Failed to load applicants', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load the applicant pipeline.');
     } finally {
       setIsLoading(false);
     }
@@ -81,6 +75,7 @@ if (!companyId) {
     if (!selectedApp) return;
 
     setIsUpdating(true);
+    setUpdateError(null);
     try {
       const updated = await applicationService.updateStatus(
         selectedApp.id,
@@ -96,6 +91,8 @@ if (!companyId) {
       setTimeout(() => setUpdateSaved(false), 2000);
     } catch (err) {
       console.error('Failed to update application', err);
+      const apiError = err as { message?: string };
+      setUpdateError(apiError.message ?? 'Failed to save the stage change.');
     } finally {
       setIsUpdating(false);
     }
@@ -118,8 +115,9 @@ if (!companyId) {
     <div className="space-y-6">
       <NoticeBanner
         badge="Applicant Pipeline Management"
-        message="Review candidate dossiers, assign star ratings, and update hiring stages in real-time."
+        message="Review candidate dossiers, assign star ratings, and update hiring stages for your company."
       />
+      {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
@@ -171,12 +169,14 @@ if (!companyId) {
             onChange={(e) => setSelectedStage(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 capitalize"
           >
+            {/* Values must match the API's canonical status strings; the
+                previous lowercase values were rejected by the server. */}
             <option value="All">All Pipeline Stages</option>
-            <option value="applied">Applied</option>
-            <option value="screening">Screening</option>
-            <option value="interview">Technical Interview</option>
-            <option value="offer">Offer Extended</option>
-            <option value="rejected">Rejected</option>
+            {APPLICATION_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {getStageLabel(status)}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -315,11 +315,11 @@ if (!companyId) {
                     onChange={(e) => setModalStage(e.target.value as ApplicationStage)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 capitalize font-medium"
                   >
-                    <option value="applied">Applied (Received)</option>
-                    <option value="screening">Resume Screening</option>
-                    <option value="interview">Technical Interview</option>
-                    <option value="offer">Offer Extended</option>
-                    <option value="rejected">Not Selected / Rejected</option>
+                    {APPLICATION_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {getStageLabel(status)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -355,6 +355,12 @@ if (!companyId) {
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
               </div>
+
+              {updateError && (
+                <div className="p-2.5 rounded-lg bg-rose-950/50 border border-rose-800/70 text-rose-300 text-xs">
+                  {updateError}
+                </div>
+              )}
 
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs">

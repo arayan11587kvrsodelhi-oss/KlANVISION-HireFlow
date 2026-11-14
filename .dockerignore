@@ -1,0 +1,16 @@
+# Docker build context exclusions for HireFlow
+.env
+.venv
+.git
+.gitignore
+.github
+dist
+node_modules
+*.pyc
+__pycache__
+*.pyw
+pytest
+tests
+tmp
+*.tmp
+*.log

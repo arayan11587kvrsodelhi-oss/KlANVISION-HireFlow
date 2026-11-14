@@ -8,8 +8,8 @@ interface NoticeBannerProps {
 }
 
 export const NoticeBanner: React.FC<NoticeBannerProps> = ({
-  message = 'Enterprise Recruitment Environment: Operating with realistic sample data structured for FastAPI backend connectivity.',
-  badge = 'SAMPLE ENVIRONMENT',
+  message = 'HireFlow is connected to its API: changes are saved to the database.',
+  badge = 'NOTICE',
   className = '',
 }) => {
   return (
@@ -22,7 +22,7 @@ export const NoticeBanner: React.FC<NoticeBannerProps> = ({
         </span>
         <span className="text-slate-300">{message}</span>
       </div>
-      <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">OpenAPI 3.1 Ready</span>
+      <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">Live data</span>
     </div>
   );
 };

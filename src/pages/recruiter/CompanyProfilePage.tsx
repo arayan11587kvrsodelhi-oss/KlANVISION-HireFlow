@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
 import { Company } from '../../types';
 import { companyService } from '../../services/api';
 import { NoticeBanner } from '../../components/common/NoticeBanner';
@@ -7,7 +6,6 @@ import { Button } from '../../components/common/Button';
 import { Building2, Globe, MapPin, Users, ShieldCheck, Check } from 'lucide-react';
 
 export const CompanyProfilePage: React.FC = () => {
-  const { user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -20,69 +18,54 @@ export const CompanyProfilePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchCompany = async () => {
       setIsLoading(true);
+      setErrorMessage(null);
       try {
-        const companyId = user?.companyId;
-if (!companyId) {
-  return (
-    <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
-      <NoticeBanner
-        badge="No Company Assignment"
-        message="Please complete your company profile to access company operations. Contact your administrator if this is incorrect."
-      />
-    </div>
-  );
-}
-        const comp = await companyService.getCompanyById(companyId);
-        if (comp) {
-          setCompany(comp);
-          setFormData({
-            name: comp.name,
-            industry: comp.industry,
-            location: comp.location,
-            website: comp.website,
-            employeeCount: comp.employeeCount,
-            description: comp.description,
-          });
-        } else {
-          setCompany({
-            id: companyId,
-            name: '',
-            logo: '',
-            industry: '',
-            location: '',
-            website: '',
-            employeeCount: '',
-            description: '',
-            verified: false,
-            openJobsCount: 0,
-          });
-          setFormData({ name: '', industry: '', location: '', website: '', employeeCount: '', description: '' });
-        }
+        // `GET /companies/me` is scoped by the caller's membership.
+        const comp = await companyService.getMyCompany();
+        if (cancelled) return;
+        setCompany(comp);
+        setFormData({
+          name: comp.name,
+          industry: comp.industry,
+          location: comp.location,
+          website: comp.website,
+          employeeCount: comp.employeeCount,
+          description: comp.description,
+        });
       } catch (err) {
+        if (cancelled) return;
         console.error('Failed to load company profile', err);
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load your company profile.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchCompany();
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!company) return;
     setIsSaving(true);
+    setErrorMessage(null);
     try {
-      const updated = await companyService.updateCompany(company.id, formData);
+      const updated = await companyService.updateMyCompany(formData);
       setCompany(updated);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
     } catch (err) {
       console.error('Failed to update company profile', err);
+      const apiError = err as { firstFieldError?: string; message?: string };
+      setErrorMessage(apiError.firstFieldError ?? apiError.message ?? 'Failed to save the company profile.');
     } finally {
       setIsSaving(false);
     }
@@ -111,6 +94,8 @@ if (!companyId) {
           </span>
         )}
       </div>
+
+      {errorMessage && <NoticeBanner badge="SAVE ERROR" message={errorMessage} />}
 
       <form onSubmit={handleSubmit} className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -175,6 +160,7 @@ if (!companyId) {
               onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
             >
+              <option value="">Not specified</option>
               <option value="1 - 10">1 - 10 employees (Early Stage)</option>
               <option value="10 - 50">10 - 50 employees</option>
               <option value="50 - 150">50 - 150 employees</option>

@@ -8,6 +8,7 @@ export const CompanyManagementPage: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchCompanies = async () => {
     setIsLoading(true);
@@ -16,6 +17,7 @@ export const CompanyManagementPage: React.FC = () => {
       setCompanies(data);
     } catch (err) {
       console.error('Failed to load companies', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to load companies.');
     } finally {
       setIsLoading(false);
     }
@@ -26,10 +28,14 @@ export const CompanyManagementPage: React.FC = () => {
   }, []);
 
   const handleToggleVerification = async (companyId: string, currentVerified: boolean) => {
-    const updated = await adminService.setCompanyVerification(companyId, !currentVerified);
-    setCompanies((prev) =>
-      prev.map((c) => (c.id === companyId ? { ...c, verified: updated.verified } : c))
-    );
+    setErrorMessage(null);
+    try {
+      const updated = await adminService.setCompanyVerification(companyId, !currentVerified);
+      setCompanies((prev) => prev.map((c) => (c.id === companyId ? updated : c)));
+    } catch (err) {
+      console.error('Failed to update company verification', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update verification status.');
+    }
   };
 
   const filtered = companies.filter(
@@ -54,6 +60,12 @@ export const CompanyManagementPage: React.FC = () => {
           {companies.length} Registered Employers
         </span>
       </div>
+
+      {errorMessage && (
+        <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs">
+          {errorMessage}
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="flex items-center gap-3 px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl max-w-md">

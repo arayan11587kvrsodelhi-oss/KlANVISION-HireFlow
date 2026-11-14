@@ -1,17 +1,38 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, UserRole, CandidateProfile } from '../types';
 import { authService, profileService } from '../services/api';
+import { setUnauthenticatedHandler } from '../services/http';
 
+/**
+ * Authentication state.
+ *
+ * The server is the single source of truth:
+ * - on mount, a silent `POST /auth/refresh` (using the HttpOnly cookie) is
+ *   attempted, then `GET /auth/me` populates the user. If either fails the user
+ *   is simply anonymous. No identity is ever read from browser storage.
+ * - `role` is whatever the backend returned; it cannot be changed client-side.
+ *   (The previous `switchRole` let any visitor "become" an admin locally; it is
+ *   removed, not merely hidden.)
+ */
 interface AuthContextType {
   user: User | null;
-  role: UserRole;
+  role: UserRole | null;
   isLoading: boolean;
-  login: (role: UserRole, email?: string) => Promise<void>;
-  register: (name: string, email: string, role: UserRole) => Promise<void>;
+  isAuthenticated: boolean;
+  /** True until the initial session probe has completed. */
+  isBootstrapping: boolean;
+  login: (email: string, password: string) => Promise<User>;
+  register: (payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    role: 'candidate' | 'recruiter';
+    companyName?: string;
+  }) => Promise<{ email: string; role: UserRole }>;
   logout: () => Promise<void>;
-  switchRole: (newRole: UserRole) => Promise<void>;
   profile: CandidateProfile | null;
   refreshProfile: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,42 +40,89 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const currentUser = await authService.getCurrentUser();
-      setUser(currentUser);
-      const candidateId = currentUser?.role === 'candidate' ? currentUser.id : undefined;
-      const candProfile = await profileService.getProfile(candidateId);
-      setProfile(candProfile);
-    } catch (err) {
-      console.error('Failed to load initial auth state', err);
-    } finally {
-      setIsLoading(false);
+  const loadProfile = useCallback(async (current: User | null) => {
+    if (!current || current.role !== 'candidate') {
+      setProfile(null);
+      return;
     }
-  };
-
-  useEffect(() => {
-    loadData();
+    try {
+      const loaded = await profileService.getProfile({ id: current.id, email: current.email });
+      setProfile(loaded);
+    } catch (error) {
+      // A profile failure must not break the dashboard shell.
+      console.error('Failed to load candidate profile', error);
+      setProfile(null);
+    }
   }, []);
 
-  const login = async (role: UserRole, email?: string) => {
+  const establishSession = useCallback(
+    async (nextUser: User | null) => {
+      setUser(nextUser);
+      await loadProfile(nextUser);
+    },
+    [loadProfile]
+  );
+
+  // A 401 that survives a refresh attempt means the session is gone.
+  useEffect(() => {
+    setUnauthenticatedHandler(() => {
+      setUser(null);
+      setProfile(null);
+    });
+    return () => setUnauthenticatedHandler(null);
+  }, []);
+
+  // Initial session probe.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await authService.getCurrentUser();
+        if (!cancelled) await establishSession(me);
+      } catch (error) {
+        console.error('Failed to probe session', error);
+      } finally {
+        if (!cancelled) setIsBootstrapping(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [establishSession]);
+
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
-      const loggedUser = await authService.login(role, email);
-      setUser(loggedUser);
+      await authService.login(email, password);
+      const me = await authService.getCurrentUser();
+      if (!me) throw new Error('Login succeeded but the session could not be loaded.');
+      await establishSession(me);
+      return me;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, role: UserRole) => {
+  const register = async (payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    role: 'candidate' | 'recruiter';
+    companyName?: string;
+  }) => {
     setIsLoading(true);
     try {
-      const newUser = await authService.register(name, email, role);
-      setUser(newUser);
+      const result = await authService.register({
+        full_name: payload.fullName,
+        email: payload.email,
+        password: payload.password,
+        role: payload.role,
+        ...(payload.role === 'recruiter' ? { company_name: payload.companyName } : {}),
+      });
+      return { email: result.email, role: result.role };
     } finally {
       setIsLoading(false);
     }
@@ -64,41 +132,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       await authService.logout();
+    } finally {
       setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const switchRole = async (newRole: UserRole) => {
-    setIsLoading(true);
-    try {
-      const switched = await authService.login(newRole);
-      setUser(switched);
-    } finally {
+      setProfile(null);
       setIsLoading(false);
     }
   };
 
   const refreshProfile = async () => {
-    const candProfile = await profileService.getProfile();
-    setProfile(candProfile);
+    if (!user || user.role !== 'candidate') return;
+    await loadProfile(user);
   };
 
-  const role = user?.role || 'candidate';
+  const refreshUser = async () => {
+    const me = await authService.getCurrentUser();
+    await establishSession(me);
+  };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        role,
+        role: user?.role ?? null,
         isLoading,
+        isAuthenticated: user !== null,
+        isBootstrapping,
         login,
         register,
         logout,
-        switchRole,
         profile,
         refreshProfile,
+        refreshUser,
       }}
     >
       {children}

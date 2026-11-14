@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { WorkExperience, Education } from '../../types';
 import { profileService } from '../../services/api';
+import { NoticeBanner } from '../../components/common/NoticeBanner';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { formatDate } from '../../utils/formatters';
@@ -17,11 +17,22 @@ import {
 } from 'lucide-react';
 
 export const SkillsExperiencePage: React.FC = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
 
-  // Skills state
+  // Skills state (seeded from the server, kept in sync after each save).
   const [skills, setSkills] = useState<string[]>(profile?.skills || []);
   const [newSkillInput, setNewSkillInput] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setSkills(profile?.skills || []);
+  }, [profile?.skills]);
+
+  const handleError = (err: unknown, fallback: string) => {
+    const apiError = err as { firstFieldError?: string; message?: string };
+    setErrorMessage(apiError.firstFieldError ?? apiError.message ?? fallback);
+  };
 
   // Experience modal state
   const [isExpModalOpen, setIsExpModalOpen] = useState(false);
@@ -45,103 +56,122 @@ export const SkillsExperiencePage: React.FC = () => {
   // Add / Remove Skill
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSkillInput.trim()) return;
     const trimmed = newSkillInput.trim();
-    if (skills.includes(trimmed)) {
+    if (!trimmed) return;
+    if (skills.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
       setNewSkillInput('');
       return;
     }
-    const updatedSkills = [...skills, trimmed];
-    setSkills(updatedSkills);
-    setNewSkillInput('');
-    const candidateId = profile?.id || user?.id || '';
-    await profileService.updateProfile(candidateId, { skills: updatedSkills });
-    await refreshProfile();
+    setErrorMessage(null);
+    setIsSaving(true);
+    try {
+      const updated = await profileService.replaceSkills([...skills, trimmed]);
+      setSkills(updated.skills);
+      setNewSkillInput('');
+      await refreshProfile();
+    } catch (err) {
+      handleError(err, 'Failed to save skill.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleRemoveSkill = async (skillToRemove: string) => {
-    const updatedSkills = skills.filter((s) => s !== skillToRemove);
-    setSkills(updatedSkills);
-    const candidateId = profile?.id || user?.id || '';
-    await profileService.updateProfile(candidateId, { skills: updatedSkills });
-    await refreshProfile();
+    setErrorMessage(null);
+    try {
+      const updated = await profileService.replaceSkills(skills.filter((s) => s !== skillToRemove));
+      setSkills(updated.skills);
+      await refreshProfile();
+    } catch (err) {
+      handleError(err, 'Failed to remove skill.');
+    }
   };
 
   // Add Experience
   const handleSaveExperience = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newExp: WorkExperience = {
-      id: `exp-${Date.now()}`,
-      role: expRole,
-      company: expCompany,
-      location: expLocation,
-      startDate: expStartDate,
-      endDate: expCurrent ? '' : expEndDate,
-      current: expCurrent,
-      description: expDescription,
-    };
-    const currentList = profile?.experience || [];
-    const updatedList = [newExp, ...currentList];
-    const candidateId = profile?.id || user?.id || '';
-    await profileService.updateProfile(candidateId, { experience: updatedList });
-    await refreshProfile();
+    setErrorMessage(null);
+    setIsSaving(true);
+    try {
+      await profileService.addExperience({
+        role: expRole,
+        company: expCompany,
+        location: expLocation,
+        startDate: expStartDate,
+        endDate: expCurrent ? '' : expEndDate,
+        current: expCurrent,
+        description: expDescription,
+      });
+      await refreshProfile();
 
-    // Reset & close
-    setIsExpModalOpen(false);
-    setExpRole('');
-    setExpCompany('');
-    setExpLocation('');
-    setExpStartDate('');
-    setExpEndDate('');
-    setExpCurrent(false);
-    setExpDescription('');
+      setIsExpModalOpen(false);
+      setExpRole('');
+      setExpCompany('');
+      setExpLocation('');
+      setExpStartDate('');
+      setExpEndDate('');
+      setExpCurrent(false);
+      setExpDescription('');
+    } catch (err) {
+      handleError(err, 'Failed to save experience entry.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteExperience = async (id: string) => {
-    const currentList = profile?.experience || [];
-    const updatedList = currentList.filter((e) => e.id !== id);
-    const candidateId = profile?.id || user?.id || '';
-    await profileService.updateProfile(candidateId, { experience: updatedList });
-    await refreshProfile();
+    setErrorMessage(null);
+    try {
+      await profileService.deleteExperience(id);
+      await refreshProfile();
+    } catch (err) {
+      handleError(err, 'Failed to delete experience entry.');
+    }
   };
 
   // Add Education
   const handleSaveEducation = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newEdu: Education = {
-      id: `edu-${Date.now()}`,
-      degree: eduDegree,
-      field: eduField,
-      institution: eduInstitution,
-      startYear: eduStartYear,
-      endYear: eduEndYear,
-      gpa: eduGpa,
-    };
-    const currentEduList = profile?.education || [];
-    const updatedEduList = [newEdu, ...currentEduList];
-    const candidateId = profile?.id || user?.id || '';
-    await profileService.updateProfile(candidateId, { education: updatedEduList });
-    await refreshProfile();
+    setErrorMessage(null);
+    setIsSaving(true);
+    try {
+      await profileService.addEducation({
+        degree: eduDegree,
+        field: eduField,
+        institution: eduInstitution,
+        startYear: eduStartYear,
+        endYear: eduEndYear,
+        gpa: eduGpa,
+      });
+      await refreshProfile();
 
-    setIsEduModalOpen(false);
-    setEduDegree('');
-    setEduField('');
-    setEduInstitution('');
-    setEduStartYear('');
-    setEduEndYear('');
-    setEduGpa('');
+      setIsEduModalOpen(false);
+      setEduDegree('');
+      setEduField('');
+      setEduInstitution('');
+      setEduStartYear('');
+      setEduEndYear('');
+      setEduGpa('');
+    } catch (err) {
+      handleError(err, 'Failed to save education entry.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteEducation = async (id: string) => {
-    const currentEduList = profile?.education || [];
-    const updatedEduList = currentEduList.filter((e) => e.id !== id);
-    const candidateId = profile?.id || user?.id || '';
-    await profileService.updateProfile(candidateId, { education: updatedEduList });
-    await refreshProfile();
+    setErrorMessage(null);
+    try {
+      await profileService.deleteEducation(id);
+      await refreshProfile();
+    } catch (err) {
+      handleError(err, 'Failed to delete education entry.');
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+      {errorMessage && <NoticeBanner badge="SAVE ERROR" message={errorMessage} />}
       <div>
         <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
           Skills, Experience & Education
@@ -170,7 +200,13 @@ export const SkillsExperiencePage: React.FC = () => {
             onChange={(e) => setNewSkillInput(e.target.value)}
             className="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
           />
-          <Button type="submit" variant="primary" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            isLoading={isSaving}
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+          >
             Add
           </Button>
         </form>
