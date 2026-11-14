@@ -1,7 +1,10 @@
-name: CI
 
+# CI
+#
 # Validation-only pipeline. It never deploys: staging deploys are a separate,
 # manual, human-approved procedure (see STAGING_DEPLOYMENT_PLAN.md §5).
+
+name: CI
 
 on:
   push:
@@ -25,19 +28,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322ed8b7dddaee1c  # v5.0.0
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        uses: actions/setup-python@v5
         with:
-         python-version: '3.12'
+          python-version: '3.12'
 
       - name: Cache pip
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
-          restore-keys: pip-${{ runner.os }}-
+          restore-keys: |
+            pip-${{ runner.os }}-
 
       - name: Install backend dependencies
         run: |
@@ -63,9 +67,6 @@ jobs:
 
       - name: Apply migrations to the CI test database
         env:
-          # `alembic/env.py` reads ALEMBIC_DATABASE_URL in preference to app
-          # settings, so migrations run against the CI database without touching
-          # application configuration. The suite's `_test` interlock is intact.
           ALEMBIC_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
           TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/hireflow_test
         run: |
@@ -86,10 +87,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322ed8b7dddaee1c  # v5.0.0
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@2028fbc5c25fe9cf00d93f38eb988fd35b8c4bc7  # v6.0.0
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -101,13 +102,10 @@ jobs:
         run: npm run lint
 
       - name: Production build
-        # The SPA is built without a VITE_API_BASE_URL here: the CI build only
-        # proves the bundle compiles. The real value is set at deploy time and
-        # requires a rebuild (documented in STAGING_DEPLOYMENT_PLAN.md §3).
         run: npm run build
 
       - name: Upload build output
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: dist/
