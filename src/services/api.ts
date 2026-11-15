@@ -126,6 +126,7 @@ export function mapApplication(api: ApiApplication): Application {
     stageUpdatedAt: api.stage_updated_at,
     notes: api.notes ?? undefined,
     rating: api.rating ?? undefined,
+    history: api.history?.length ? api.history : undefined,
   };
 }
 

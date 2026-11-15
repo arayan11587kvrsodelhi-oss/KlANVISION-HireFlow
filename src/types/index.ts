@@ -92,6 +92,14 @@ export interface Application {
   stageUpdatedAt: string;
   notes?: string;
   rating?: number;
+  /** Immutable audit trail of stage transitions (candidate-facing subset). */
+  history?: ApplicationStatusChange[];
+}
+
+export interface ApplicationStatusChange {
+  previous_status: string;
+  new_status: string;
+  changed_at: string;
 }
 
 export interface WorkExperience {
