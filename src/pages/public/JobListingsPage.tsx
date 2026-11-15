@@ -130,27 +130,27 @@ export const JobListingsPage: React.FC = () => {
       {errorMessage && <NoticeBanner badge="LOAD ERROR" message={errorMessage} />}
 
       {/* Top Search Controls Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+      <div className="glass-panel rounded-2xl p-4 shadow-sm">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-          <div className="md:col-span-5 flex items-center gap-3 px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg focus-within:border-blue-500 transition-colors">
+          <div className="md:col-span-5 flex items-center gap-3 px-3.5 py-2.5 bg-white/80 border border-slate-200/80 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25 transition-all">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
               placeholder="Search by title, technology, or keywords..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-transparent text-slate-100 placeholder-slate-400 text-xs md:text-sm focus:outline-none"
+              className="w-full bg-transparent text-slate-700 placeholder-slate-400 text-xs md:text-sm focus:outline-none"
             />
           </div>
 
-          <div className="md:col-span-4 flex items-center gap-3 px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg focus-within:border-blue-500 transition-colors">
+          <div className="md:col-span-4 flex items-center gap-3 px-3.5 py-2.5 bg-white/80 border border-slate-200/80 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25 transition-all">
             <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
               placeholder="Location (e.g. San Francisco, Remote)"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full bg-transparent text-slate-100 placeholder-slate-400 text-xs md:text-sm focus:outline-none"
+              className="w-full bg-transparent text-slate-700 placeholder-slate-400 text-xs md:text-sm focus:outline-none"
             />
           </div>
 
@@ -163,7 +163,7 @@ export const JobListingsPage: React.FC = () => {
                 type="button"
                 onClick={handleResetFilters}
                 title="Reset all filters"
-                className="p-2.5 rounded-lg border border-slate-800 bg-slate-950/50 hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+                className="p-2.5 rounded-lg border border-slate-200 bg-white/70 hover:bg-white text-slate-500 hover:text-slate-900 transition-colors"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -173,36 +173,36 @@ export const JobListingsPage: React.FC = () => {
 
         {/* Active Filter Chips */}
         {hasActiveFilters && (
-          <div className="flex items-center gap-2 flex-wrap pt-3 mt-3 border-t border-slate-800/80 text-xs">
-            <span className="text-slate-400 font-medium">Active filters:</span>
+          <div className="flex items-center gap-2 flex-wrap pt-3 mt-3 border-t border-slate-200/70 text-xs">
+            <span className="text-slate-500 font-medium">Active filters:</span>
             {query && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-600">
                 <span>"{query}"</span>
-                <button onClick={() => { setQuery(''); }}><X className="w-3 h-3 hover:text-white" /></button>
+                <button onClick={() => { setQuery(''); }}><X className="w-3 h-3 hover:text-slate-900" /></button>
               </span>
             )}
             {location && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                 <span>{location}</span>
-                <button onClick={() => { setLocation(''); }}><X className="w-3 h-3 hover:text-white" /></button>
+                <button onClick={() => { setLocation(''); }}><X className="w-3 h-3 hover:text-slate-900" /></button>
               </span>
             )}
             {workplaceType !== 'All' && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                 <span>{workplaceType}</span>
-                <button onClick={() => setWorkplaceType('All')}><X className="w-3 h-3 hover:text-white" /></button>
+                <button onClick={() => setWorkplaceType('All')}><X className="w-3 h-3 hover:text-slate-900" /></button>
               </span>
             )}
             {department !== 'All' && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                 <span>{department}</span>
-                <button onClick={() => setDepartment('All')}><X className="w-3 h-3 hover:text-white" /></button>
+                <button onClick={() => setDepartment('All')}><X className="w-3 h-3 hover:text-slate-900" /></button>
               </span>
             )}
             {salaryMin > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-slate-800 text-slate-300">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                 <span>Min ${salaryMin / 1000}k</span>
-                <button onClick={() => setSalaryMin(0)}><X className="w-3 h-3 hover:text-white" /></button>
+                <button onClick={() => setSalaryMin(0)}><X className="w-3 h-3 hover:text-slate-900" /></button>
               </span>
             )}
             <button
@@ -219,16 +219,16 @@ export const JobListingsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Filter Column */}
         <aside className="lg:col-span-3 space-y-6">
-          <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                <SlidersHorizontal className="w-4 h-4 text-blue-400" />
+          <div className="p-5 glass-panel rounded-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                <SlidersHorizontal className="w-4 h-4 text-blue-600" />
                 <span>Search Refinements</span>
               </div>
               {hasActiveFilters && (
                 <button
                   onClick={handleResetFilters}
-                  className="text-xs text-slate-400 hover:text-blue-400 transition-colors"
+                  className="text-xs text-slate-400 hover:text-blue-600 transition-colors"
                 >
                   Reset
                 </button>
@@ -237,10 +237,10 @@ export const JobListingsPage: React.FC = () => {
 
             {/* Workplace Type */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Workplace Environment
               </label>
-              <div className="space-y-1.5 text-xs text-slate-300">
+              <div className="space-y-1.5 text-xs text-slate-600">
                 {(['All', 'Remote', 'Hybrid', 'On-site'] as const).map((type) => (
                   <label key={type} className="flex items-center gap-2 cursor-pointer select-none py-0.5">
                     <input
@@ -258,13 +258,13 @@ export const JobListingsPage: React.FC = () => {
 
             {/* Department */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Department
               </label>
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               >
                 {departments.map((dep) => (
                   <option key={dep} value={dep}>
@@ -276,10 +276,10 @@ export const JobListingsPage: React.FC = () => {
 
             {/* Experience Level */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Seniority Level
               </label>
-              <div className="space-y-1.5 text-xs text-slate-300">
+              <div className="space-y-1.5 text-xs text-slate-600">
                 {(['All', 'Entry', 'Mid', 'Senior', 'Lead'] as const).map((lvl) => (
                   <label key={lvl} className="flex items-center gap-2 cursor-pointer select-none py-0.5">
                     <input
@@ -298,10 +298,10 @@ export const JobListingsPage: React.FC = () => {
             {/* Minimum Salary Slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <label className="font-semibold text-slate-300 uppercase tracking-wider">
+                <label className="font-semibold text-slate-600 uppercase tracking-wider">
                   Min Base Salary
                 </label>
-                <span className="font-mono text-emerald-400 font-semibold tabular-nums">
+                <span className="font-mono text-emerald-600 font-semibold tabular-nums">
                   ${salaryMin > 0 ? `${salaryMin / 1000}k` : 'Any'}
                 </span>
               </div>
@@ -312,7 +312,7 @@ export const JobListingsPage: React.FC = () => {
                 step="15000"
                 value={salaryMin}
                 onChange={(e) => setSalaryMin(Number(e.target.value))}
-                className="w-full accent-blue-600 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 bg-slate-200 h-1.5 rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                 <span>$0</span>
@@ -326,17 +326,17 @@ export const JobListingsPage: React.FC = () => {
         {/* Results Stream Column */}
         <div className="lg:col-span-9 space-y-4">
           {/* Top Bar for Results Count & Sort Dropdown */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-            <div className="text-xs text-slate-400 font-medium">
-              Showing <span className="text-white font-semibold font-mono tabular-nums">{jobs.length}</span> positions matching criteria
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+            <div className="text-xs text-slate-500 font-medium">
+              Showing <span className="text-slate-900 font-semibold font-mono tabular-nums">{jobs.length}</span> positions matching criteria
             </div>
 
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-400">Sort by:</span>
+              <span className="text-slate-500">Sort by:</span>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as any)}
-                className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+                className="bg-white/80 border border-slate-200/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer shadow-sm"
               >
                 <option value="newest">Most Recent</option>
                 <option value="salary-high">Highest Compensation</option>
@@ -351,7 +351,7 @@ export const JobListingsPage: React.FC = () => {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="p-6 bg-slate-900/40 border border-slate-800 rounded-xl animate-pulse h-36"
+                  className="p-6 glass-panel rounded-2xl animate-pulse h-36"
                 />
               ))}
             </div>
@@ -370,7 +370,7 @@ export const JobListingsPage: React.FC = () => {
                 return (
                   <div
                     key={job.id}
-                    className="p-5 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl transition-all group relative shadow-sm"
+                    className="p-5 glass-panel glass-hover rounded-2xl group relative"
                   >
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                       {/* Left: Job Core Info */}
@@ -378,7 +378,7 @@ export const JobListingsPage: React.FC = () => {
                         <div className="flex items-start justify-between md:justify-start gap-3">
                           <Link
                             to={`/jobs/${job.id}`}
-                            className="text-base font-semibold text-white group-hover:text-blue-400 transition-colors"
+                            className="text-base font-semibold text-slate-900 group-hover:text-blue-600 transition-colors"
                           >
                             {job.title}
                           </Link>
@@ -392,8 +392,8 @@ export const JobListingsPage: React.FC = () => {
                         </div>
 
                         {/* Unboxed metadata with typographic separators */}
-                        <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
-                          <span className="font-medium text-slate-200">{job.companyName}</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                          <span className="font-medium text-slate-700">{job.companyName}</span>
                           <span aria-hidden="true">·</span>
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3 text-slate-400" />
@@ -405,7 +405,7 @@ export const JobListingsPage: React.FC = () => {
                           <span>{job.experienceLevel} Level</span>
                         </div>
 
-                        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed pt-1">
+                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed pt-1">
                           {job.description}
                         </p>
 
@@ -414,7 +414,7 @@ export const JobListingsPage: React.FC = () => {
                           {job.requirements.slice(0, 3).map((req, idx) => (
                             <span
                               key={idx}
-                              className="text-[11px] text-slate-300 bg-slate-800/60 border border-slate-700/60 px-2 py-0.5 rounded"
+                              className="text-[11px] text-slate-600 bg-white/80 border border-slate-200 px-2 py-0.5 rounded-md"
                             >
                               {req.split(' ').slice(0, 3).join(' ')}...
                             </span>
@@ -423,9 +423,9 @@ export const JobListingsPage: React.FC = () => {
                       </div>
 
                       {/* Right: Salary & Actions */}
-                      <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-800 shrink-0">
+                      <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-200/70 shrink-0">
                         <div className="text-right">
-                          <div className="text-sm font-semibold font-mono text-emerald-400 tabular-nums">
+                          <div className="text-sm font-semibold font-mono text-emerald-600 tabular-nums">
                             {formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency)}
                           </div>
                           <div className="text-[11px] text-slate-400">Annual Base Range</div>
@@ -436,8 +436,8 @@ export const JobListingsPage: React.FC = () => {
                             onClick={(e) => handleToggleSave(job.id, e)}
                             className={`p-2 rounded-lg border transition-colors ${
                               isSaved
-                                ? 'bg-blue-600/20 border-blue-500/50 text-blue-400'
-                                : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:text-white'
+                                ? 'bg-blue-50 border-blue-300 text-blue-600'
+                                : 'bg-white/80 border-slate-200 text-slate-400 hover:text-slate-700'
                             }`}
                             title={isSaved ? 'Remove from saved' : 'Save job'}
                           >

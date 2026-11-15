@@ -44,14 +44,14 @@ export const SavedJobsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
             Saved Positions & Bookmarks
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Jobs you have bookmarked for review and one-click application submission.
           </p>
         </div>
-        <span className="text-xs font-mono text-slate-400">
+        <span className="text-xs font-mono text-slate-500">
           {savedJobs.length} bookmarked
         </span>
       </div>
@@ -61,7 +61,7 @@ export const SavedJobsPage: React.FC = () => {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2].map((n) => (
-            <div key={n} className="p-6 bg-slate-900 border border-slate-800 rounded-xl animate-pulse h-32" />
+            <div key={n} className="p-6 glass-panel rounded-2xl animate-pulse h-32" />
           ))}
         </div>
       ) : savedJobs.length === 0 ? (
@@ -77,13 +77,13 @@ export const SavedJobsPage: React.FC = () => {
           {savedJobs.map((job) => (
             <div
               key={job.id}
-              className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="p-5 rounded-2xl glass-panel glass-hover flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
               <div className="space-y-1.5 flex-1">
                 <div className="flex items-center gap-3">
                   <Link
                     to={`/jobs/${job.id}`}
-                    className="text-base font-semibold text-white hover:text-blue-400 transition-colors"
+                    className="text-base font-semibold text-slate-900 hover:text-blue-600 transition-colors"
                   >
                     {job.title}
                   </Link>
@@ -96,8 +96,8 @@ export const SavedJobsPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
-                  <span className="font-medium text-slate-200">{job.companyName}</span>
+                <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                  <span className="font-medium text-slate-700">{job.companyName}</span>
                   <span>·</span>
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-slate-400" />
@@ -107,15 +107,15 @@ export const SavedJobsPage: React.FC = () => {
                   <span>{job.jobType}</span>
                 </div>
 
-                <div className="text-xs font-mono font-medium text-emerald-400 pt-1">
+                <div className="text-xs font-mono font-medium text-emerald-600 pt-1">
                   {formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency)}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800">
+              <div className="flex items-center gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/70">
                 <button
                   onClick={() => handleRemove(job.id)}
-                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
                   title="Remove from saved"
                 >
                   <Trash2 className="w-4 h-4" />

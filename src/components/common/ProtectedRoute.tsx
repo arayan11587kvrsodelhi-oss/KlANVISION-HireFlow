@@ -25,9 +25,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allow, children 
 
   if (isBootstrapping) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-400 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500 text-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
           <span>Restoring your session…</span>
         </div>
       </div>
@@ -43,14 +43,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allow, children 
     const home = role === 'admin' ? '/admin' : role === 'recruiter' ? '/recruiter' : '/candidate';
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-6">
-        <div className="max-w-md w-full p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-4">
-          <div className="w-12 h-12 mx-auto rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
+        <div className="max-w-md w-full p-8 rounded-2xl bg-white/85 backdrop-blur-xl border border-slate-200/80 text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-lg font-semibold text-white">Access restricted</h1>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Your account has the <span className="font-mono text-slate-200">{role}</span> role,
+            <h1 className="text-lg font-semibold text-slate-900">Access restricted</h1>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Your account has the <span className="font-mono text-slate-700">{role}</span> role,
               which cannot open this area. If you believe this is a mistake, contact your
               platform administrator.
             </p>

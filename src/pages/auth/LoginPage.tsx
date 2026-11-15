@@ -67,24 +67,24 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md space-y-5">
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:bg-blue-500 transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30 group-hover:scale-105 transition-transform">
               <Briefcase className="w-5 h-5" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-white">HireFlow</span>
+            <span className="text-2xl font-bold tracking-tight text-slate-900">HireFlow</span>
           </Link>
-          <h1 className="text-xl font-bold text-slate-100 tracking-tight">Sign in to your account</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Sign in to your account</h1>
+          <p className="text-xs text-slate-500">
             Your role (candidate, recruiter or administrator) is assigned to your account by HireFlow.
           </p>
         </div>
 
-        <div className="p-6 md:p-7 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-5">
+        <div className="p-6 md:p-7 rounded-2xl glass-panel-strong space-y-5">
           {errorMessage && (
             <div
               role="alert"
-              className="p-3 rounded-lg bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2"
+              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-2"
             >
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -124,9 +124,9 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          <div className="text-center text-xs text-slate-400 pt-1">
+          <div className="text-center text-xs text-slate-500 pt-1">
             Need an account?{' '}
-            <Link to="/register" className="text-blue-400 font-semibold hover:underline">
+            <Link to="/register" className="text-blue-600 font-semibold hover:underline">
               Create an account
             </Link>
           </div>
