@@ -2,37 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Application, ApplicationStatus, APPLICATION_STATUSES } from '../../types';
 import { applicationService } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatDateTime, formatShortRef } from '../../utils/formatters';
 import { ApplicationStageBadge } from '../../components/common/Badge';
-
 import { Button } from '../../components/common/Button';
-
-
-
-
-
 import { NoticeBanner } from '../../components/common/NoticeBanner';
-
-
-
-
-
-
-
-
 import { EmptyState } from '../../components/common/EmptyState';
-
 import {
   Send,
-  Building2,
-  Clock,
-  Calendar,
   FileText,
   ChevronDown,
   ChevronUp,
   ExternalLink,
   MessageSquare,
+  MessageSquareOff,
+  CheckCircle2,
+  Circle,
+  XCircle,
 } from 'lucide-react';
+
+/**
+ * The visible recruitment pipeline shown to candidates.
+ *
+ * "Screening" and "Shortlisted" both map onto the canonical `Shortlisted`
+ * status (resume screening IS the shortlisting step), so the seven-step
+ * hiring journey the recruiters describe maps cleanly onto the five stored
+ * statuses without inventing data. "Rejected" is a terminal branch shown
+ * separately when the application is rejected.
+ */
+const PIPELINE_STAGES: Array<{ label: string; status: ApplicationStatus }> = [
+  { label: 'Applied', status: 'Applied' },
+  { label: 'Screening', status: 'Shortlisted' },
+  { label: 'Shortlisted', status: 'Shortlisted' },
+  { label: 'Interview', status: 'Interview' },
+  { label: 'Selected', status: 'Selected' },
+];
 
 export const MyApplicationsPage: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -173,7 +176,7 @@ export const MyApplicationsPage: React.FC = () => {
                       <span>·</span>
                       <span>Submitted on {formatDate(app.appliedDate)}</span>
                       <span>·</span>
-                      <span className="font-mono text-slate-400">Ref #{app.id}</span>
+                      <span className="font-mono text-slate-400">Ref {formatShortRef(app.id)}</span>
                     </div>
                   </div>
 
@@ -191,36 +194,68 @@ export const MyApplicationsPage: React.FC = () => {
 
                 {/* Visual Pipeline Progression Steps */}
                 <div className="pt-2">
-                  <div className="grid grid-cols-4 gap-2">
-                    {[...APPLICATION_STATUSES].map((stepLabel, idx) => {
-                      const stageIdx = APPLICATION_STATUSES.indexOf(app.status);
-                      const isComplete = stageIdx >= idx;
-                      const isCurrent = stageIdx === idx;
-                      const isRejected = app.status === 'Rejected';
-
-                      let barColor = 'bg-slate-200';
-                      if (isRejected) {
-                        barColor = 'bg-rose-50 border border-rose-200 text-rose-500';
-                      } else if (isComplete) {
-                        barColor = 'bg-gradient-to-r from-blue-600 to-blue-500';
-                      }
-
-                      return (
-                        <div key={stepLabel} className="space-y-1.5">
-                          <div className={`h-2 rounded-full ${barColor}`} />
-                          <div className="flex justify-between items-center text-[11px]">
-                            <span className={`font-medium ${isCurrent ? 'text-blue-600 font-bold' : 'text-slate-500'}`}>
-                              {stepLabel}
-                            </span>
-                          </div>
-                        </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {(() => {
+                      const currentStageIdx = PIPELINE_STAGES.reduce(
+                        (acc, s, i) => (s.status === app.status ? i : acc),
+                        0
                       );
-                    })}
+                      const isRejected = app.status === 'Rejected';
+                      return PIPELINE_STAGES.map((stage, idx) => {
+                        const isComplete = idx < currentStageIdx;
+                        const isCurrent = idx === currentStageIdx && !isRejected;
+                        const isUpcoming = idx > currentStageIdx && !isRejected;
+
+                        const barColor = isRejected
+                          ? 'bg-rose-200'
+                          : isCurrent
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 ring-2 ring-blue-500/30'
+                          : isComplete
+                          ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                          : 'bg-slate-200';
+
+                        const labelColor = isRejected
+                          ? 'text-rose-500'
+                          : isCurrent
+                          ? 'text-blue-600 font-bold'
+                          : isComplete
+                          ? 'text-emerald-600'
+                          : isUpcoming
+                          ? 'text-slate-400'
+                          : 'text-slate-500';
+
+                        return (
+                          <div key={stage.label} className="space-y-1.5">
+                            <div className="flex items-center gap-1">
+                              {isComplete ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              ) : isCurrent ? (
+                                <Circle className="w-3.5 h-3.5 text-blue-600 fill-blue-100 shrink-0" />
+                              ) : isRejected && idx === currentStageIdx ? (
+                                <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                              ) : (
+                                <Circle className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                              )}
+                              <span className={`text-[11px] font-medium ${labelColor}`}>
+                                {stage.label}
+                              </span>
+                            </div>
+                            <div className={`h-1.5 rounded-full ${barColor}`} />
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
+                  {app.status === 'Rejected' && (
+                    <p className="text-[11px] text-rose-500 mt-2 font-medium">
+                      This application was not selected. The pipeline above is paused at its last
+                      active stage.
+                    </p>
+                  )}
                 </div>
 
                 {/* Recruiter Feedback / Notes Banner */}
-                {app.notes && (
+                {app.notes ? (
                   <div className="p-3.5 rounded-xl bg-white/80 border border-slate-200/70 text-xs text-slate-600 flex items-start gap-2.5">
                     <MessageSquare className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                     <div>
@@ -229,6 +264,17 @@ export const MyApplicationsPage: React.FC = () => {
                       </div>
                       <p className="leading-relaxed">{app.notes}</p>
                     </div>
+                  </div>
+                ) : (
+                  <div
+                    className="p-3 rounded-xl bg-white/50 border border-dashed border-slate-200 text-xs text-slate-400 flex items-center gap-2"
+                    aria-live="polite"
+                  >
+                    <MessageSquareOff className="w-4 h-4 text-slate-300 shrink-0" />
+                    <span>
+                      No recruiter feedback yet — you will see it here as soon as the hiring team
+                      updates your application.
+                    </span>
                   </div>
                 )}
 
@@ -252,6 +298,34 @@ export const MyApplicationsPage: React.FC = () => {
                         </p>
                       </div>
                     )}
+
+                    {/* Status-change audit trail, straight from the API. */}
+                    <div>
+                      <h4 className="font-semibold text-slate-700 mb-1">Status History</h4>
+                      {app.history?.length ? (
+                        <ul className="space-y-1.5">
+                          {[...app.history]
+                            .sort((a, b) => Date.parse(a.changed_at) - Date.parse(b.changed_at))
+                            .map((h, i) => (
+                              <li
+                                key={`${h.changed_at}-${i}`}
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-200 text-slate-600"
+                              >
+                                <span className="whitespace-nowrap">
+                                  {h.previous_status === h.new_status
+                                    ? `Application submitted (${h.new_status})`
+                                    : `${h.previous_status} → ${h.new_status}`}
+                                </span>
+                                <span className="font-mono text-[11px] text-slate-400 shrink-0">
+                                  {formatDateTime(h.changed_at)}
+                                </span>
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <p className="text-slate-400 px-1">No recorded stage changes yet.</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

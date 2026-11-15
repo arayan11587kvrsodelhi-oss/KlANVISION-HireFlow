@@ -23,6 +23,33 @@ export function formatDate(dateString: string): string {
   }
 }
 
+export function formatDateTime(dateString: string): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+/**
+ * Short, human-readable reference for a UUID (e.g. `#9fd20e7b`).
+ *
+ * Full UUIDs are 36 characters and overflow the card header on narrow
+ * screens and inside the document title, so they are never displayed raw.
+ */
+export function formatShortRef(id: string): string {
+  if (!id) return '—';
+  return `#${id.slice(0, 8)}`;
+}
+
 export function getInitials(name: string): string {
   if (!name) return 'HF';
   const parts = name.trim().split(/\s+/);
