@@ -49,44 +49,44 @@ export const CompanyManagementPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
             Company Accreditation & Employer Governance
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Review corporate domain ownership, legal registration, and grant verified employer badges.
           </p>
         </div>
-        <span className="text-xs font-mono text-slate-400">
+        <span className="text-xs font-mono text-slate-500">
           {companies.length} Registered Employers
         </span>
       </div>
 
       {errorMessage && (
-        <div className="p-3 rounded-lg bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs">
+        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs">
           {errorMessage}
         </div>
       )}
 
       {/* Search Input */}
-      <div className="flex items-center gap-3 px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl max-w-md">
+      <div className="flex items-center gap-3 px-3.5 py-2.5 glass-panel rounded-xl max-w-md">
         <Search className="w-4 h-4 text-slate-400 shrink-0" />
         <input
           type="text"
           placeholder="Filter by company name or industry..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full bg-transparent text-slate-100 placeholder-slate-400 text-xs focus:outline-none"
+          className="w-full bg-transparent text-slate-700 placeholder-slate-400 text-xs focus:outline-none"
         />
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div className="p-8 text-center text-slate-400">Loading companies...</div>
+        <div className="p-8 text-center text-slate-500">Loading companies...</div>
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="glass-panel rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/70 text-slate-400 font-semibold border-b border-slate-800">
+              <thead className="bg-slate-100/70 text-slate-500 font-semibold border-b border-slate-200/70">
                 <tr>
                   <th className="p-4">Employer Entity</th>
                   <th className="p-4">Industry Sector</th>
@@ -97,33 +97,33 @@ export const CompanyManagementPage: React.FC = () => {
                   <th className="p-4 text-right">Accreditation Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-200/70">
                 {filtered.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={c.id} className="hover:bg-white/80 transition-colors">
                     <td className="p-4">
-                      <div className="font-semibold text-white">{c.name}</div>
+                      <div className="font-semibold text-slate-900">{c.name}</div>
                       <a
                         href={c.website}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="text-[11px] text-blue-400 hover:underline flex items-center gap-1 mt-0.5"
+                        className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
                       >
                         <Globe className="w-3 h-3" />
                         <span>{c.website.replace('https://', '')}</span>
                       </a>
                     </td>
-                    <td className="p-4 text-slate-300">{c.industry}</td>
-                    <td className="p-4 text-slate-300">{c.location}</td>
-                    <td className="p-4 font-mono text-slate-300">{c.employeeCount}</td>
-                    <td className="p-4 font-mono text-slate-200">{c.openJobsCount} positions</td>
+                    <td className="p-4 text-slate-600">{c.industry}</td>
+                    <td className="p-4 text-slate-600">{c.location}</td>
+                    <td className="p-4 font-mono text-slate-600">{c.employeeCount}</td>
+                    <td className="p-4 font-mono text-slate-700">{c.openJobsCount} positions</td>
                     <td className="p-4">
                       {c.verified ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                           <ShieldCheck className="w-3 h-3" />
                           <span>Verified</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-950/60 border border-amber-800/50 px-2 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                           <ShieldAlert className="w-3 h-3" />
                           <span>Pending</span>
                         </span>

@@ -111,7 +111,7 @@ export const CreateJobPage: React.FC = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate('/recruiter/jobs')}
-          className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+          className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Manage Jobs</span>
@@ -119,31 +119,31 @@ export const CreateJobPage: React.FC = () => {
       </div>
 
       {errorMessage && (
-        <div className="p-3.5 rounded-lg bg-rose-950/50 border border-rose-800/80 text-xs text-rose-300 flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-600 flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
           Create New Job Opening
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Publish a new position to the HireFlow talent board.
         </p>
       </div>
 
-      <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
+      <div className="p-6 md:p-8 rounded-2xl glass-panel-strong space-y-6">
         {/* Core Info */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-200/70 pb-2">
             1. Role Title & Classification
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Position Title
               </label>
               <input
@@ -152,18 +152,18 @@ export const CreateJobPage: React.FC = () => {
                 placeholder="e.g. Principal Distributed Systems Architect"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Department
               </label>
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               >
                 <option value="Engineering">Engineering</option>
                 <option value="AI & Research">AI & Research</option>
@@ -175,13 +175,13 @@ export const CreateJobPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Workplace Environment
               </label>
               <select
                 value={workplaceType}
                 onChange={(e) => setWorkplaceType(e.target.value as WorkplaceType)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               >
                 <option value="Remote">Remote</option>
                 <option value="Hybrid">Hybrid</option>
@@ -190,13 +190,13 @@ export const CreateJobPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Employment Type
               </label>
               <select
                 value={jobType}
                 onChange={(e) => setJobType(e.target.value as JobType)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               >
                 <option value="Full-time">Full-time</option>
                 <option value="Part-time">Part-time</option>
@@ -206,13 +206,13 @@ export const CreateJobPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Seniority Level
               </label>
               <select
                 value={experienceLevel}
                 onChange={(e) => setExperienceLevel(e.target.value as ExperienceLevel)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               >
                 <option value="Entry">Entry Level</option>
                 <option value="Mid">Mid Level</option>
@@ -223,14 +223,14 @@ export const CreateJobPage: React.FC = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Location (Hub or Region)
               </label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
           </div>
@@ -238,13 +238,13 @@ export const CreateJobPage: React.FC = () => {
 
         {/* Compensation */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-200/70 pb-2">
             2. Transparent Base Compensation
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Minimum Annual Base (USD)
               </label>
               <input
@@ -252,12 +252,12 @@ export const CreateJobPage: React.FC = () => {
                 step="5000"
                 value={salaryMin}
                 onChange={(e) => setSalaryMin(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Maximum Annual Base (USD)
               </label>
               <input
@@ -265,7 +265,7 @@ export const CreateJobPage: React.FC = () => {
                 step="5000"
                 value={salaryMax}
                 onChange={(e) => setSalaryMax(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 font-mono"
               />
             </div>
           </div>
@@ -273,7 +273,7 @@ export const CreateJobPage: React.FC = () => {
 
         {/* Overview */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-200/70 pb-2">
             3. Job Overview & Description
           </h2>
           <textarea
@@ -282,23 +282,23 @@ export const CreateJobPage: React.FC = () => {
             placeholder="Describe the mission, technical scope, and team dynamic..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+            className="w-full bg-white/80 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
           />
         </div>
 
         {/* Responsibilities */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-200/70 pb-2">
             4. Core Responsibilities
           </h2>
           <div className="space-y-2">
             {responsibilities.map((r, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200">
+              <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-white/80 border border-slate-200/70 text-xs text-slate-700">
                 <span>{r}</span>
                 <button
                   type="button"
                   onClick={() => setResponsibilities(responsibilities.filter((_, idx) => idx !== i))}
-                  className="text-slate-400 hover:text-rose-400 p-1"
+                  className="text-slate-400 hover:text-rose-500 p-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -312,7 +312,7 @@ export const CreateJobPage: React.FC = () => {
               placeholder="Add responsibility item..."
               value={newResp}
               onChange={(e) => setNewResp(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-white/80 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
             <Button type="button" variant="secondary" size="sm" onClick={handleAddResp}>
               Add
@@ -322,17 +322,17 @@ export const CreateJobPage: React.FC = () => {
 
         {/* Requirements */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-200/70 pb-2">
             5. Candidate Requirements
           </h2>
           <div className="space-y-2">
             {requirements.map((r, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200">
+              <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-white/80 border border-slate-200/70 text-xs text-slate-700">
                 <span>{r}</span>
                 <button
                   type="button"
                   onClick={() => setRequirements(requirements.filter((_, idx) => idx !== i))}
-                  className="text-slate-400 hover:text-rose-400 p-1"
+                  className="text-slate-400 hover:text-rose-500 p-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -346,7 +346,7 @@ export const CreateJobPage: React.FC = () => {
               placeholder="Add requirement item..."
               value={newReq}
               onChange={(e) => setNewReq(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-white/80 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
             <Button type="button" variant="secondary" size="sm" onClick={handleAddReq}>
               Add
@@ -356,17 +356,17 @@ export const CreateJobPage: React.FC = () => {
 
         {/* Benefits */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-semibold text-slate-700 border-b border-slate-200/70 pb-2">
             6. Benefits & Total Rewards
           </h2>
           <div className="space-y-2">
             {benefits.map((b, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200">
+              <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-white/80 border border-slate-200/70 text-xs text-slate-700">
                 <span>{b}</span>
                 <button
                   type="button"
                   onClick={() => setBenefits(benefits.filter((_, idx) => idx !== i))}
-                  className="text-slate-400 hover:text-rose-400 p-1"
+                  className="text-slate-400 hover:text-rose-500 p-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -380,7 +380,7 @@ export const CreateJobPage: React.FC = () => {
               placeholder="Add benefit item..."
               value={newBenefit}
               onChange={(e) => setNewBenefit(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-white/80 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
             <Button type="button" variant="secondary" size="sm" onClick={handleAddBenefit}>
               Add
@@ -389,7 +389,7 @@ export const CreateJobPage: React.FC = () => {
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+        <div className="pt-4 border-t border-slate-200/70 flex items-center justify-end gap-3">
           <Button
             type="button"
             variant="outline"

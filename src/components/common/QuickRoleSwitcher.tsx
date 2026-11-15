@@ -8,9 +8,9 @@ const ROLE_PRESENTATION: Record<
   UserRole,
   { label: string; icon: typeof UserCheck; color: string; text: string; path: string }
 > = {
-  candidate: { label: 'Candidate', icon: UserCheck, color: 'text-blue-400', text: 'bg-blue-500/10 border-blue-500/30 text-blue-400', path: '/candidate' },
-  recruiter: { label: 'Recruiter', icon: Briefcase, color: 'text-purple-400', text: 'bg-purple-500/10 border-purple-500/30 text-purple-400', path: '/recruiter' },
-  admin: { label: 'Admin', icon: ShieldAlert, color: 'text-emerald-400', text: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', path: '/admin' },
+  candidate: { label: 'Candidate', icon: UserCheck, color: 'text-blue-600', text: 'bg-blue-50 border-blue-200 text-blue-600', path: '/candidate' },
+  recruiter: { label: 'Recruiter', icon: Briefcase, color: 'text-violet-600', text: 'bg-violet-50 border-violet-200 text-violet-600', path: '/recruiter' },
+  admin: { label: 'Admin', icon: ShieldAlert, color: 'text-emerald-600', text: 'bg-emerald-50 border-emerald-200 text-emerald-600', path: '/admin' },
 };
 
 /**
@@ -33,12 +33,12 @@ export const QuickRoleSwitcher: React.FC = () => {
   return (
     <Link
       to={presentation.path}
-      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-blue-500/50 text-slate-200 transition-all shadow-sm"
+      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/75 backdrop-blur-sm border border-slate-200/80 hover:border-blue-400/60 text-slate-700 transition-all shadow-sm"
       title={`Signed in as ${presentation.label}`}
     >
       <Icon className={`w-3.5 h-3.5 ${presentation.color}`} />
-      <span className="text-slate-400 font-mono text-[11px]">ROLE:</span>
-      <span className="font-semibold text-slate-100 capitalize">{role}</span>
+      <span className="text-slate-400 text-[11px] uppercase tracking-wide">Role:</span>
+      <span className="font-semibold text-slate-800 capitalize">{role}</span>
     </Link>
   );
 };

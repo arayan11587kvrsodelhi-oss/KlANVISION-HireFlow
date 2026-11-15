@@ -72,23 +72,23 @@ export const CompanyProfilePage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-400">Loading company record...</div>;
+    return <div className="p-8 text-center text-slate-500">Loading company record...</div>;
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
             Employer Profile & Branding
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Configure how your company appears on public job listings and candidate correspondence.
           </p>
         </div>
 
         {company?.verified && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
             <ShieldCheck className="w-4 h-4" />
             <span>Verified Employer Status</span>
           </span>
@@ -97,10 +97,10 @@ export const CompanyProfilePage: React.FC = () => {
 
       {errorMessage && <NoticeBanner badge="SAVE ERROR" message={errorMessage} />}
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
+      <form onSubmit={handleSubmit} className="p-6 md:p-8 rounded-2xl glass-panel-strong space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Company Name
             </label>
             <input
@@ -108,12 +108,12 @@ export const CompanyProfilePage: React.FC = () => {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Primary Industry
             </label>
             <input
@@ -121,12 +121,12 @@ export const CompanyProfilePage: React.FC = () => {
               required
               value={formData.industry}
               onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Headquarters / Main Hub
             </label>
             <input
@@ -134,12 +134,12 @@ export const CompanyProfilePage: React.FC = () => {
               required
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Company Website URL
             </label>
             <input
@@ -147,18 +147,18 @@ export const CompanyProfilePage: React.FC = () => {
               required
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Team Size Range
             </label>
             <select
               value={formData.employeeCount}
               onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             >
               <option value="">Not specified</option>
               <option value="1 - 10">1 - 10 employees (Early Stage)</option>
@@ -171,7 +171,7 @@ export const CompanyProfilePage: React.FC = () => {
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               About the Company / Mission Statement
             </label>
             <textarea
@@ -179,15 +179,15 @@ export const CompanyProfilePage: React.FC = () => {
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-200/70 flex items-center justify-between">
           <div className="text-xs">
             {saveSuccess && (
-              <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
+              <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
                 <Check className="w-4 h-4" />
                 Company profile updated
               </span>

@@ -92,14 +92,14 @@ export const EditJobPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-400">Loading position record...</div>;
+    return <div className="p-8 text-center text-slate-500">Loading position record...</div>;
   }
 
   if (!job) {
     return (
       <div className="p-8 text-center space-y-3">
-        <p className="text-white">Job not found.</p>
-        <button onClick={() => navigate('/recruiter/jobs')} className="text-blue-400 text-xs">
+        <p className="text-slate-900">Job not found.</p>
+        <button onClick={() => navigate('/recruiter/jobs')} className="text-blue-600 text-xs">
           Return to Jobs
         </button>
       </div>
@@ -110,32 +110,32 @@ export const EditJobPage: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       <button
         onClick={() => navigate('/recruiter/jobs')}
-        className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+        className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Back to Manage Jobs</span>
       </button>
 
       {errorMessage && (
-        <div className="p-3.5 rounded-lg bg-rose-950/50 border border-rose-800/80 text-xs text-rose-300 flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-600 flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
           Edit Job Opening: {job.title}
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Update requirements, compensation ranges, or requisition publication status.
         </p>
       </div>
 
-      <form onSubmit={handleSave} className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
+      <form onSubmit={handleSave} className="p-6 md:p-8 rounded-2xl glass-panel-strong space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Position Title
             </label>
             <input
@@ -143,12 +143,12 @@ export const EditJobPage: React.FC = () => {
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Department
             </label>
             <input
@@ -156,18 +156,18 @@ export const EditJobPage: React.FC = () => {
               required
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Publication Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as JobStatus)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 capitalize"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 capitalize"
             >
               <option value="published">Published (Active)</option>
               <option value="draft">Draft (Private)</option>
@@ -176,13 +176,13 @@ export const EditJobPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Workplace Type
             </label>
             <select
               value={workplaceType}
               onChange={(e) => setWorkplaceType(e.target.value as WorkplaceType)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             >
               <option value="Remote">Remote</option>
               <option value="Hybrid">Hybrid</option>
@@ -191,13 +191,13 @@ export const EditJobPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Seniority Level
             </label>
             <select
               value={experienceLevel}
               onChange={(e) => setExperienceLevel(e.target.value as ExperienceLevel)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             >
               <option value="Entry">Entry</option>
               <option value="Mid">Mid</option>
@@ -208,31 +208,31 @@ export const EditJobPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Min Salary (USD)
             </label>
             <input
               type="number"
               value={salaryMin}
               onChange={(e) => setSalaryMin(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Max Salary (USD)
             </label>
             <input
               type="number"
               value={salaryMax}
               onChange={(e) => setSalaryMax(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 font-mono"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Job Description
             </label>
             <textarea
@@ -240,12 +240,12 @@ export const EditJobPage: React.FC = () => {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+        <div className="pt-4 border-t border-slate-200/70 flex items-center justify-end gap-3">
           <Button
             type="button"
             variant="ghost"

@@ -68,16 +68,16 @@ export const RecruiterDashboard: React.FC = () => {
       />
 
       {/* Top Banner */}
-      <div className="p-6 md:p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-purple-950/40 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="p-6 md:p-8 rounded-2xl glass-panel-strong flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-purple-400">
+          <div className="flex items-center gap-2 text-xs font-semibold text-violet-600">
             <Briefcase className="w-4 h-4" />
             <span>Employer Talent Hub · {user?.companyName ?? 'Your company'}</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
             Recruiter Control Center
           </h1>
-          <p className="text-xs md:text-sm text-slate-400 max-w-xl">
+          <p className="text-xs md:text-sm text-slate-500 max-w-xl">
             Manage your open engineering requisitions, review incoming technical dossiers, and update candidate stages.
           </p>
         </div>
@@ -98,50 +98,50 @@ export const RecruiterDashboard: React.FC = () => {
 
       {/* KPI Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-5 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Active Job Postings</span>
-            <Briefcase className="w-4 h-4 text-blue-400" />
+            <Briefcase className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-white tabular-nums">
+          <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
             {jobs.length}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-slate-500">
             {new Set(jobs.map((j) => j.department).filter(Boolean)).size} departments
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-5 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Total Applicants</span>
-            <Users className="w-4 h-4 text-purple-400" />
+            <Users className="w-4 h-4 text-violet-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-purple-400 tabular-nums">
+          <div className="text-2xl font-bold font-mono text-violet-600 tabular-nums">
             {applications.length}
           </div>
-          <div className="text-[11px] text-slate-400">Active review queue</div>
+          <div className="text-[11px] text-slate-500">Active review queue</div>
         </div>
 
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-5 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>In Technical Interview</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-amber-400 tabular-nums">
+          <div className="text-2xl font-bold font-mono text-amber-600 tabular-nums">
             {inInterview}
           </div>
-          <div className="text-[11px] text-slate-400">In technical review</div>
+          <div className="text-[11px] text-slate-500">In technical review</div>
         </div>
 
-        <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-5 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Offers Extended</span>
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <CheckCircle className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400 tabular-nums">
+          <div className="text-2xl font-bold font-mono text-emerald-600 tabular-nums">
             {inOffer}
           </div>
-          <div className="text-[11px] text-slate-400">Selected candidates</div>
+          <div className="text-[11px] text-slate-500">Selected candidates</div>
         </div>
       </div>
 
@@ -149,26 +149,26 @@ export const RecruiterDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Recent Applicants */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
             <div>
-              <h2 className="text-base font-semibold text-white tracking-tight">
+              <h2 className="text-base font-semibold text-slate-900 tracking-tight">
                 Recent Applicant Submissions
               </h2>
-              <p className="text-xs text-slate-400">Latest dossiers awaiting evaluation or scheduling</p>
+              <p className="text-xs text-slate-500">Latest dossiers awaiting evaluation or scheduling</p>
             </div>
             <Link
               to="/recruiter/applicants"
-              className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-500 flex items-center gap-1"
             >
               <span>Manage Pipeline</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+          <div className="glass-panel rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950/60 text-slate-400 font-semibold border-b border-slate-800">
+                <thead className="bg-slate-100/70 text-slate-500 font-semibold border-b border-slate-200/70">
                   <tr>
                     <th className="p-3.5">Candidate</th>
                     <th className="p-3.5">Target Role</th>
@@ -177,26 +177,26 @@ export const RecruiterDashboard: React.FC = () => {
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/80">
+                <tbody className="divide-y divide-slate-200/70">
                   {applications.slice(0, 5).map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={app.id} className="hover:bg-white/80 transition-colors">
                       <td className="p-3.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300 text-[10px]">
+                          <div className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-[10px] shadow-sm">
                             {getInitials(app.candidateName)}
                           </div>
                           <div>
-                            <div className="font-semibold text-white">{app.candidateName}</div>
-                            <div className="text-[11px] text-slate-400">{app.candidateEmail}</div>
+                            <div className="font-semibold text-slate-900">{app.candidateName}</div>
+                            <div className="text-[11px] text-slate-500">{app.candidateEmail}</div>
                           </div>
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <div className="text-slate-200 font-medium truncate max-w-[180px]">
+                        <div className="text-slate-700 font-medium truncate max-w-[180px]">
                           {app.jobTitle}
                         </div>
                       </td>
-                      <td className="p-3.5 font-mono text-slate-400">
+                      <td className="p-3.5 font-mono text-slate-500">
                         {formatDate(app.appliedDate)}
                       </td>
                       <td className="p-3.5">
@@ -205,7 +205,7 @@ export const RecruiterDashboard: React.FC = () => {
                       <td className="p-3.5 text-right">
                         <Link
                           to="/recruiter/applicants"
-                          className="text-blue-400 hover:text-blue-300 font-medium"
+                          className="text-blue-600 hover:text-blue-500 font-medium"
                         >
                           Review
                         </Link>
@@ -220,14 +220,14 @@ export const RecruiterDashboard: React.FC = () => {
 
         {/* Quick Open Positions Summary */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
             <div>
-              <h2 className="text-base font-semibold text-white tracking-tight">
+              <h2 className="text-base font-semibold text-slate-900 tracking-tight">
                 Live Requisitions
               </h2>
-              <p className="text-xs text-slate-400">Positions accepting applications</p>
+              <p className="text-xs text-slate-500">Positions accepting applications</p>
             </div>
-            <Link to="/recruiter/jobs" className="text-xs text-blue-400 hover:text-blue-300">
+            <Link to="/recruiter/jobs" className="text-xs text-blue-600 hover:text-blue-500">
               All ({jobs.length})
             </Link>
           </div>
@@ -236,28 +236,28 @@ export const RecruiterDashboard: React.FC = () => {
             {jobs.map((job) => (
               <div
                 key={job.id}
-                className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 hover:border-slate-700 transition-colors"
+                className="p-4 rounded-2xl glass-panel glass-hover space-y-2"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-xs font-semibold text-white">{job.title}</h3>
-                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <h3 className="text-xs font-semibold text-slate-900">{job.title}</h3>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-200">
                     {job.applicantsCount} applicants
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 flex items-center justify-between">
                   <span>{job.department}</span>
                   <span>{job.workplaceType}</span>
                 </div>
-                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs">
                   <Link
                     to={`/recruiter/jobs/${job.id}/edit`}
-                    className="text-slate-400 hover:text-white transition-colors"
+                    className="text-slate-500 hover:text-slate-900 transition-colors"
                   >
                     Edit Spec
                   </Link>
                   <Link
                     to="/recruiter/applicants"
-                    className="text-blue-400 hover:text-blue-300 font-semibold"
+                    className="text-blue-600 hover:text-blue-500 font-semibold"
                   >
                     View Dossiers
                   </Link>

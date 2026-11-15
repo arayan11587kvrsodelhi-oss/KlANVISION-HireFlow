@@ -11,14 +11,17 @@ export const Card: React.FC<CardProps> = ({
   ...props
 }) => {
   const variantStyles = {
-    default: 'bg-slate-900 border border-slate-800/90 shadow-sm',
-    subtle: 'bg-slate-900/50 border border-slate-800/70',
-    interactive: 'bg-slate-900/70 border border-slate-800/80 hover:border-slate-700 transition-all cursor-pointer shadow-sm hover:shadow-md',
+    default:
+      'bg-white/72 backdrop-blur-xl border border-slate-200/70 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.08)]',
+    subtle:
+      'bg-white/55 backdrop-blur-lg border border-slate-200/60 shadow-sm',
+    interactive:
+      'bg-white/75 backdrop-blur-xl border border-slate-200/70 hover:border-slate-300/80 hover:shadow-[0_2px_4px_rgba(15,23,42,0.04),0_20px_44px_-16px_rgba(15,23,42,0.14)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer',
   };
 
   return (
     <div
-      className={`rounded-xl text-slate-100 overflow-hidden ${variantStyles[variant]} ${className}`}
+      className={`rounded-2xl text-slate-700 overflow-hidden ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -31,7 +34,7 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className = '',
   ...props
 }) => (
-  <div className={`p-5 pb-3 border-b border-slate-800/80 flex items-start justify-between gap-4 ${className}`} {...props}>
+  <div className={`p-5 pb-3 border-b border-slate-200/80 flex items-start justify-between gap-4 ${className}`} {...props}>
     {children}
   </div>
 );
@@ -41,7 +44,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   className = '',
   ...props
 }) => (
-  <h3 className={`text-sm font-semibold text-white tracking-tight ${className}`} {...props}>
+  <h3 className={`text-sm font-semibold text-slate-900 tracking-tight ${className}`} {...props}>
     {children}
   </h3>
 );
@@ -51,7 +54,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   className = '',
   ...props
 }) => (
-  <p className={`text-xs text-slate-400 mt-0.5 leading-relaxed ${className}`} {...props}>
+  <p className={`text-xs text-slate-500 mt-0.5 leading-relaxed ${className}`} {...props}>
     {children}
   </p>
 );
@@ -71,7 +74,7 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className = '',
   ...props
 }) => (
-  <div className={`p-4 bg-slate-950/40 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 ${className}`} {...props}>
+  <div className={`p-4 bg-white/40 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500 ${className}`} {...props}>
     {children}
   </div>
 );

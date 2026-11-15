@@ -99,16 +99,16 @@ export const CandidateDashboard: React.FC = () => {
       />
 
       {/* Top Welcome Banner */}
-      <div className="p-6 md:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="p-6 md:p-8 rounded-2xl glass-panel-strong flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-400">
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
             <UserCheck className="w-4 h-4" />
             <span>Candidate Dossier & Sourcing Stream</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
             Welcome back, {profile?.fullName || 'Candidate'}
           </h1>
-          <p className="text-xs md:text-sm text-slate-400 max-w-xl">
+          <p className="text-xs md:text-sm text-slate-500 max-w-xl">
             {profile?.headline || 'Add a professional headline to stand out'}
             {profile?.location ? ` · ${profile.location}` : ''}
           </p>
@@ -130,50 +130,50 @@ export const CandidateDashboard: React.FC = () => {
 
       {/* KPI Metric Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Submitted Applications</span>
-            <Send className="w-4 h-4 text-blue-400" />
+            <Send className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-white tabular-nums">
+          <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
             {applications.length}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-slate-500">
             {activeCount} active in review
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Interview Round</span>
-            <CalendarCheck className="w-4 h-4 text-amber-400" />
+            <CalendarCheck className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-amber-400 tabular-nums">
+          <div className="text-2xl font-bold font-mono text-amber-600 tabular-nums">
             {activeInterviews.length}
           </div>
-          <div className="text-[11px] text-slate-400">Technical review stage</div>
+          <div className="text-[11px] text-slate-500">Technical review stage</div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Bookmarked Roles</span>
-            <Bookmark className="w-4 h-4 text-purple-400" />
+            <Bookmark className="w-4 h-4 text-violet-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-white tabular-nums">
+          <div className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
             {savedJobs.length}
           </div>
-          <div className="text-[11px] text-slate-400">Saved for review</div>
+          <div className="text-[11px] text-slate-500">Saved for review</div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 rounded-2xl glass-panel glass-hover space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span>Profile Health</span>
-            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <Sparkles className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400 tabular-nums">
+          <div className="text-2xl font-bold font-mono text-emerald-600 tabular-nums">
             {completionPercentage}%
           </div>
-          <div className="text-[11px] text-slate-400">{completedCount} of 4 areas ready</div>
+          <div className="text-[11px] text-slate-500">{completedCount} of 4 areas ready</div>
         </div>
       </div>
 
@@ -181,16 +181,16 @@ export const CandidateDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Recent Applications Pipeline */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
             <div>
-              <h2 className="text-sm font-semibold text-white tracking-tight uppercase tracking-wider">
+              <h2 className="text-sm font-semibold text-slate-900 tracking-tight uppercase tracking-wider">
                 Application Pipeline Status
               </h2>
-              <p className="text-xs text-slate-400">Real-time stage transparency from verified hiring managers</p>
+              <p className="text-xs text-slate-500">Real-time stage transparency from verified hiring managers</p>
             </div>
             <Link
               to="/candidate/applications"
-              className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-500 flex items-center gap-1"
             >
               <span>View all ({applications.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -201,13 +201,13 @@ export const CandidateDashboard: React.FC = () => {
             {applications.map((app) => (
               <div
                 key={app.id}
-                className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3 hover:border-slate-700 transition-colors shadow-sm"
+                className="p-5 rounded-2xl glass-panel glass-hover space-y-3"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-white">{app.jobTitle}</h3>
-                    <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                      <span className="text-slate-300 font-medium">{app.companyName}</span>
+                    <h3 className="text-sm font-semibold text-slate-900">{app.jobTitle}</h3>
+                    <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                      <span className="text-slate-700 font-medium">{app.companyName}</span>
                       <span>·</span>
                       <span>Submitted on {formatDate(app.appliedDate)}</span>
                     </div>
@@ -230,17 +230,17 @@ export const CandidateDashboard: React.FC = () => {
                       const isCurrent = currentIdx === idx;
                       const isRejected = app.status === 'Rejected';
 
-                      let barColor = 'bg-slate-800';
+                      let barColor = 'bg-slate-200';
                       if (isRejected) {
-                        barColor = 'bg-rose-950/60 border border-rose-800/40 text-rose-400';
+                        barColor = 'bg-rose-50 border border-rose-200 text-rose-500';
                       } else if (isComplete) {
-                        barColor = 'bg-blue-600';
+                        barColor = 'bg-gradient-to-r from-blue-600 to-blue-500';
                       }
 
                       return (
                         <div key={step.key} className="space-y-1">
                           <div className={`h-1.5 rounded-full ${barColor}`} />
-                          <div className={`text-[10px] truncate ${isCurrent ? 'text-blue-400 font-semibold' : 'text-slate-400'}`}>
+                          <div className={`text-[10px] truncate ${isCurrent ? 'text-blue-600 font-semibold' : 'text-slate-500'}`}>
                             {step.label}
                           </div>
                         </div>
@@ -250,10 +250,10 @@ export const CandidateDashboard: React.FC = () => {
                 </div>
 
                 {app.notes && (
-                  <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex items-start gap-2">
-                    <Clock className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="p-3 rounded-xl bg-white/80 border border-slate-200/70 text-xs text-slate-600 flex items-start gap-2">
+                    <Clock className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
                     <div>
-                      <span className="font-semibold text-slate-300">Recruiter Feedback: </span>
+                      <span className="font-semibold text-slate-700">Recruiter Feedback: </span>
                       <span>{app.notes}</span>
                     </div>
                   </div>
@@ -266,23 +266,23 @@ export const CandidateDashboard: React.FC = () => {
         {/* Right Column: Profile Completion & Saved Jobs */}
         <div className="lg:col-span-4 space-y-6">
           {/* Profile Completion Checklist */}
-          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="p-5 rounded-2xl glass-panel space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
               <div className="space-y-0.5">
-                <h3 className="text-xs font-semibold text-white uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
                   Profile Completion
                 </h3>
-                <p className="text-[11px] text-slate-400">Dossier visibility to recruiters</p>
+                <p className="text-[11px] text-slate-500">Dossier visibility to recruiters</p>
               </div>
-              <span className="font-mono font-bold text-xs text-emerald-400">
+              <span className="font-mono font-bold text-xs text-emerald-600">
                 {completionPercentage}%
               </span>
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/70">
               <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full rounded-full transition-all duration-300"
                 style={{ width: `${completionPercentage}%` }}
               />
             </div>
@@ -292,35 +292,35 @@ export const CandidateDashboard: React.FC = () => {
                 <Link
                   key={idx}
                   to={item.link}
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 transition-colors group"
+                  className="flex items-center justify-between p-2 rounded-xl hover:bg-white/90 transition-colors group"
                 >
                   <div className="flex items-center gap-2">
                     <div
                       className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
                         item.complete
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-slate-800 text-slate-400'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200'
                       }`}
                     >
                       <Check className="w-2.5 h-2.5" />
                     </div>
-                    <span className="text-slate-300 text-xs group-hover:text-white transition-colors">
+                    <span className="text-slate-600 text-xs group-hover:text-slate-900 transition-colors">
                       {item.title}
                     </span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-colors" />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                 </Link>
               ))}
             </div>
           </div>
 
           {/* Saved Jobs Mini-List */}
-          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-xs font-semibold text-white uppercase tracking-wider">
+          <div className="p-5 rounded-2xl glass-panel space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
                 Bookmarked Roles
               </h3>
-              <Link to="/candidate/saved" className="text-xs text-blue-400 hover:text-blue-300">
+              <Link to="/candidate/saved" className="text-xs text-blue-600 hover:text-blue-500">
                 View all ({savedJobs.length})
               </Link>
             </div>
@@ -329,19 +329,19 @@ export const CandidateDashboard: React.FC = () => {
               {savedJobs.map((job) => (
                 <div
                   key={job.id}
-                  className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition-colors space-y-1"
+                  className="p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:border-slate-300 transition-colors space-y-1"
                 >
                   <div className="flex items-start justify-between gap-1">
                     <Link
                       to={`/jobs/${job.id}`}
-                      className="text-xs font-semibold text-white hover:text-blue-400 transition-colors truncate"
+                      className="text-xs font-semibold text-slate-900 hover:text-blue-600 transition-colors truncate"
                     >
                       {job.title}
                     </Link>
                   </div>
-                  <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                  <div className="text-[11px] text-slate-500 flex items-center justify-between">
                     <span>{job.companyName}</span>
-                    <span className="font-mono text-emerald-400">{formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency)}</span>
+                    <span className="font-mono text-emerald-600">{formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency)}</span>
                   </div>
                 </div>
               ))}

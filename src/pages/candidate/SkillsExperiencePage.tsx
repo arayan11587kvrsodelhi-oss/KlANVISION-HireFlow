@@ -173,22 +173,22 @@ export const SkillsExperiencePage: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       {errorMessage && <NoticeBanner badge="SAVE ERROR" message={errorMessage} />}
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
           Skills, Experience & Education
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-500 mt-1">
           Detailed technical history parsed by hiring managers and recruiter algorithms.
         </p>
       </div>
 
       {/* 1. Skills Manager */}
-      <section className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <section className="p-6 rounded-2xl glass-panel space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
           <div>
-            <h2 className="text-sm font-semibold text-white">Technical Skills & Competencies</h2>
-            <p className="text-xs text-slate-400">Add programming languages, frameworks, and architecture tools</p>
+            <h2 className="text-sm font-semibold text-slate-900">Technical Skills & Competencies</h2>
+            <p className="text-xs text-slate-500">Add programming languages, frameworks, and architecture tools</p>
           </div>
-          <span className="text-xs font-mono text-slate-400">{skills.length} skills listed</span>
+          <span className="text-xs font-mono text-slate-500">{skills.length} skills listed</span>
         </div>
 
         {/* Input bar */}
@@ -198,7 +198,7 @@ export const SkillsExperiencePage: React.FC = () => {
             placeholder="Add skill (e.g. Distributed Systems, Rust, GraphQL)..."
             value={newSkillInput}
             onChange={(e) => setNewSkillInput(e.target.value)}
-            className="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
           />
           <Button
             type="submit"
@@ -216,13 +216,13 @@ export const SkillsExperiencePage: React.FC = () => {
           {skills.map((skill) => (
             <span
               key={skill}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-800/80 border border-slate-700 text-xs font-medium text-slate-200"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-700 shadow-sm"
             >
               <span>{skill}</span>
               <button
                 type="button"
                 onClick={() => handleRemoveSkill(skill)}
-                className="text-slate-400 hover:text-rose-400 p-0.5 rounded transition-colors"
+                className="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-colors"
                 title={`Remove ${skill}`}
               >
                 <X className="w-3 h-3" />
@@ -233,11 +233,11 @@ export const SkillsExperiencePage: React.FC = () => {
       </section>
 
       {/* 2. Work Experience */}
-      <section className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <section className="p-6 rounded-2xl glass-panel space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
           <div>
-            <h2 className="text-sm font-semibold text-white">Work Experience</h2>
-            <p className="text-xs text-slate-400">Previous and current employment records</p>
+            <h2 className="text-sm font-semibold text-slate-900">Work Experience</h2>
+            <p className="text-xs text-slate-500">Previous and current employment records</p>
           </div>
           <Button
             variant="secondary"
@@ -253,13 +253,13 @@ export const SkillsExperiencePage: React.FC = () => {
           {(profile?.experience || []).map((exp) => (
             <div
               key={exp.id}
-              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 space-y-2 relative group"
+              className="p-4 rounded-xl bg-white/80 border border-slate-200/70 space-y-2 relative group"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">{exp.role}</h3>
-                  <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                    <span className="text-blue-400 font-medium">{exp.company}</span>
+                  <h3 className="text-sm font-bold text-slate-900">{exp.role}</h3>
+                  <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                    <span className="text-blue-600 font-medium">{exp.company}</span>
                     <span>·</span>
                     <span>{exp.location}</span>
                     <span>·</span>
@@ -271,14 +271,14 @@ export const SkillsExperiencePage: React.FC = () => {
 
                 <button
                   onClick={() => handleDeleteExperience(exp.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-all"
                   title="Delete experience"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed pt-1 whitespace-pre-line">
+              <p className="text-xs text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
                 {exp.description}
               </p>
             </div>
@@ -287,11 +287,11 @@ export const SkillsExperiencePage: React.FC = () => {
       </section>
 
       {/* 3. Education History */}
-      <section className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <section className="p-6 rounded-2xl glass-panel space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
           <div>
-            <h2 className="text-sm font-semibold text-white">Education & Degrees</h2>
-            <p className="text-xs text-slate-400">Academic foundations and certifications</p>
+            <h2 className="text-sm font-semibold text-slate-900">Education & Degrees</h2>
+            <p className="text-xs text-slate-500">Academic foundations and certifications</p>
           </div>
           <Button
             variant="secondary"
@@ -307,13 +307,13 @@ export const SkillsExperiencePage: React.FC = () => {
           {(profile?.education || []).map((edu) => (
             <div
               key={edu.id}
-              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex items-start justify-between relative group"
+              className="p-4 rounded-xl bg-white/80 border border-slate-200/70 flex items-start justify-between relative group"
             >
               <div>
-                <h3 className="text-sm font-bold text-white">{edu.degree}</h3>
-                <div className="text-xs text-slate-300 mt-0.5">{edu.field}</div>
-                <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                  <span className="text-slate-200">{edu.institution}</span>
+                <h3 className="text-sm font-bold text-slate-900">{edu.degree}</h3>
+                <div className="text-xs text-slate-600 mt-0.5">{edu.field}</div>
+                <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                  <span className="text-slate-800">{edu.institution}</span>
                   <span>·</span>
                   <span className="font-mono">{edu.startYear} - {edu.endYear}</span>
                   {edu.gpa && (
@@ -327,7 +327,7 @@ export const SkillsExperiencePage: React.FC = () => {
 
               <button
                 onClick={() => handleDeleteEducation(edu.id)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-all"
                 title="Delete education"
               >
                 <Trash2 className="w-4 h-4" />
@@ -348,7 +348,7 @@ export const SkillsExperiencePage: React.FC = () => {
         <form onSubmit={handleSaveExperience} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Job Title / Role
               </label>
               <input
@@ -357,11 +357,11 @@ export const SkillsExperiencePage: React.FC = () => {
                 placeholder="e.g. Lead Staff Frontend Engineer"
                 value={expRole}
                 onChange={(e) => setExpRole(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Company Name
               </label>
               <input
@@ -370,13 +370,13 @@ export const SkillsExperiencePage: React.FC = () => {
                 placeholder="e.g. Stripe, Inc."
                 value={expCompany}
                 onChange={(e) => setExpCompany(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Location
             </label>
             <input
@@ -384,13 +384,13 @@ export const SkillsExperiencePage: React.FC = () => {
               placeholder="e.g. San Francisco, CA (Remote)"
               value={expLocation}
               onChange={(e) => setExpLocation(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Start Date
               </label>
               <input
@@ -398,12 +398,12 @@ export const SkillsExperiencePage: React.FC = () => {
                 required
                 value={expStartDate}
                 onChange={(e) => setExpStartDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 End Date
               </label>
               <input
@@ -411,12 +411,12 @@ export const SkillsExperiencePage: React.FC = () => {
                 disabled={expCurrent}
                 value={expEndDate}
                 onChange={(e) => setExpEndDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 disabled:opacity-40"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 text-xs text-slate-300">
+          <div className="flex items-center gap-2 pt-1 text-xs text-slate-600">
             <input
               type="checkbox"
               id="currentRole"
@@ -430,7 +430,7 @@ export const SkillsExperiencePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Key Responsibilities & Impact
             </label>
             <textarea
@@ -439,11 +439,11 @@ export const SkillsExperiencePage: React.FC = () => {
               placeholder="Architected distributed cache invalidation reducing p99 response times by 35%..."
               value={expDescription}
               onChange={(e) => setExpDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
-          <div className="pt-2 flex justify-end gap-2 border-t border-slate-800">
+          <div className="pt-2 flex justify-end gap-2 border-t border-slate-200/70">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsExpModalOpen(false)}>
               Cancel
             </Button>
@@ -464,7 +464,7 @@ export const SkillsExperiencePage: React.FC = () => {
       >
         <form onSubmit={handleSaveEducation} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Degree / Credential
             </label>
             <input
@@ -473,12 +473,12 @@ export const SkillsExperiencePage: React.FC = () => {
               placeholder="e.g. B.S. in Computer Science"
               value={eduDegree}
               onChange={(e) => setEduDegree(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Field of Study
             </label>
             <input
@@ -486,12 +486,12 @@ export const SkillsExperiencePage: React.FC = () => {
               placeholder="e.g. Software Engineering & Distributed Systems"
               value={eduField}
               onChange={(e) => setEduField(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
               Institution / University
             </label>
             <input
@@ -500,13 +500,13 @@ export const SkillsExperiencePage: React.FC = () => {
               placeholder="e.g. University of Washington"
               value={eduInstitution}
               onChange={(e) => setEduInstitution(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 Start Year
               </label>
               <input
@@ -514,11 +514,11 @@ export const SkillsExperiencePage: React.FC = () => {
                 placeholder="2016"
                 value={eduStartYear}
                 onChange={(e) => setEduStartYear(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
                 End Year (or Expected)
               </label>
               <input
@@ -526,12 +526,12 @@ export const SkillsExperiencePage: React.FC = () => {
                 placeholder="2020"
                 value={eduEndYear}
                 onChange={(e) => setEduEndYear(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white/80 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25"
               />
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-2 border-t border-slate-800">
+          <div className="pt-2 flex justify-end gap-2 border-t border-slate-200/70">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsEduModalOpen(false)}>
               Cancel
             </Button>
