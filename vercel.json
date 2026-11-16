@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "https://hireflow-staging.fly.dev/api/v1/$1"
+      "destination": "https://hireflow-api-spc5.onrender.com/api/v1/$1"
     },
     {
       "source": "/(.*)",
