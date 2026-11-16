@@ -219,16 +219,71 @@ export const http = {
   upload: <T>(path: string, formData: FormData) => execute<T>(path, { method: 'POST', formData }),
 };
 
-/** Build an absolute URL to an API path (used for authenticated downloads). */
-export function apiUrl(path: string): string {
-  // If path already includes the API prefix, don't duplicate it.
-  // This handles both relative paths from the frontend and absolute paths from the backend.
-  const base = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+/** Extract the path portion from a URL or root-relative path.
+ * Works in any JS environment (does not depend on window.location). */
+export function extractApiPath(baseUrl: string): string {
+  try {
+    // If it's a full URL, extract the pathname
+    const parsed = new URL(baseUrl, 'http://localhost');
+    return parsed.pathname.replace(/\/$/, '');
+  } catch {
+    // Not a valid URL, treat as root-relative path
+    return baseUrl.replace(/\/$/, '');
+  }
+}
+
+/** Check if a string is an absolute URL (has protocol). */
+export function isAbsoluteUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
+/**
+ * Core URL building logic - pure function for testability.
+ * Takes API_BASE_URL as parameter instead of using module-level constant.
+ */
+export function buildApiUrl(apiBaseUrl: string, path: string): string {
+  // Preserve already-absolute HTTP(S) URLs
+  if (isAbsoluteUrl(path)) {
+    return path;
+  }
+
+  // Extract the API path component (e.g., "/api/v1" from "/api/v1" or "https://api.example.com/api/v1")
+  const apiPath = extractApiPath(apiBaseUrl);
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  if (normalizedPath.startsWith(base)) {
+
+  // Extract pathname portion for prefix matching (handles query strings)
+  const pathForMatching = normalizedPath.split('?')[0] ?? normalizedPath;
+
+  // Check if path matches the API prefix exactly or has it as a prefix
+  const isExactPrefixMatch = pathForMatching === apiPath;
+  const hasPrefix = pathForMatching.startsWith(`${apiPath}/`);
+
+  if (isExactPrefixMatch || hasPrefix) {
+    // Path already contains the API prefix (e.g., backend returns /api/v1/...).
+    // Return as absolute URL.
+    if (isAbsoluteUrl(apiBaseUrl)) {
+      const base = apiBaseUrl.endsWith('/') ? apiBaseUrl : `${apiBaseUrl}/`;
+      return new URL(normalizedPath, base).toString();
+    }
+    // Root-relative base: just return the normalized path
     return normalizedPath;
   }
-  return `${API_BASE_URL}${normalizedPath}`;
+
+  // Path is relative to API root (e.g., frontend calls /candidates/...).
+  // Prepend the apiPath, then construct absolute URL.
+  const prefixedPath = `${apiPath}${normalizedPath}`;
+  if (isAbsoluteUrl(apiBaseUrl)) {
+    // For full URL base, use origin as base and prepend apiPath to path
+    const origin = new URL(apiBaseUrl).origin;
+    return new URL(prefixedPath, origin).toString();
+  }
+  // Root-relative base: just return the prefixed path
+  return prefixedPath;
+}
+
+/** Build an absolute URL to an API path (used for authenticated downloads). */
+export function apiUrl(path: string): string {
+  return buildApiUrl(API_BASE_URL, path);
 }
 
 /**
