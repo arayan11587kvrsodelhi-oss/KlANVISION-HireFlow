@@ -199,7 +199,10 @@ def test_suspended_account_cannot_log_in(client, app_session, register_user):
 # Refresh / logout
 # ---------------------------------------------------------------------------
 
-def test_refresh_rotates_token_and_old_cookie_is_rejected(client, register_user):
+def test_refresh_rotates_token_and_old_cookie_is_rejected(secure_client, register_user):
+    # `secure_client` speaks HTTPS so the (Secure) refresh cookie round-trips;
+    # the cookie policy itself is unchanged.
+    client = secure_client
     _, email, password = register_user("candidate")
     first = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     first_cookie = first.cookies.get("hireflow_refresh")
@@ -233,7 +236,8 @@ def test_refresh_with_forged_cookie_is_unauthorised(client):
     assert response.status_code == 401
 
 
-def test_logout_clears_cookie_and_revokes_session(client, register_user):
+def test_logout_clears_cookie_and_revokes_session(secure_client, register_user):
+    client = secure_client
     _, email, password = register_user("candidate")
     login = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
@@ -251,8 +255,9 @@ def test_logout_is_idempotent_and_works_without_session(client):
     assert client.post("/api/v1/auth/logout").status_code == 200
 
 
-def test_refresh_rejects_cross_site_origin(client, register_user):
+def test_refresh_rejects_cross_site_origin(secure_client, register_user):
     """The cookie-backed endpoint refuses requests from foreign origins."""
+    client = secure_client
     _, email, password = register_user("candidate")
     client.post("/api/v1/auth/login", json={"email": email, "password": password})
 
@@ -263,7 +268,8 @@ def test_refresh_rejects_cross_site_origin(client, register_user):
     assert allowed.status_code == 200
 
 
-def test_logout_rejects_cross_site_origin(client, register_user):
+def test_logout_rejects_cross_site_origin(secure_client, register_user):
+    client = secure_client
     _, email, password = register_user("candidate")
     client.post("/api/v1/auth/login", json={"email": email, "password": password})
     response = client.post("/api/v1/auth/logout", headers={"Origin": "https://evil.example"})

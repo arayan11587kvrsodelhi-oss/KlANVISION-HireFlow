@@ -176,7 +176,31 @@ def client(engine: Engine) -> Iterator[TestClient]:
     one connection whose transaction is rolled back after the test. Sharing a
     single session across requests would let the identity map serve stale
     relationship data and hide real bugs.
+
+    This transport is plain ``http://testserver``. That is correct for most
+    tests, but it deliberately cannot carry ``Secure`` cookies: outside
+    development ``REFRESH_COOKIE_SECURE`` is on, so use :func:`secure_client`
+    for anything that exercises the refresh cookie under those settings.
     """
+    yield from _client_bound_to_transaction(engine, base_url="http://testserver")
+
+
+@pytest.fixture()
+def secure_client(engine: Engine) -> Iterator[TestClient]:
+    """Same fixture lifecycle as :func:`client`, over ``https://testserver``.
+
+    ``Secure`` cookies are only sent over a secure transport, so a test that
+    needs the refresh cookie round-trip must speak HTTPS. Using an https base
+    URL keeps production cookie policy intact (rather than disabling ``Secure``)
+    while giving the cookie a transport that may carry it.
+    """
+    yield from _client_bound_to_transaction(engine, base_url="https://testserver")
+
+
+def _client_bound_to_transaction(
+    engine: Engine, *, base_url: str
+) -> Iterator[TestClient]:
+    """Shared body of the ``client`` / ``secure_client`` fixtures."""
     from app.db.session import get_db_session
     from app.main import app
 
@@ -199,7 +223,7 @@ def client(engine: Engine) -> Iterator[TestClient]:
     limiter.reset()
     _TEST_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     try:
-        with TestClient(app) as test_client:
+        with TestClient(app, base_url=base_url) as test_client:
             yield test_client
     finally:
         app.dependency_overrides.clear()
