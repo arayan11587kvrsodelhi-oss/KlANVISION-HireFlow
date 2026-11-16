@@ -7,6 +7,7 @@ import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { EmptyState } from '../../components/common/EmptyState';
 import { NoticeBanner } from '../../components/common/NoticeBanner';
+import { downloadAuthenticated, ApiError } from '../../services/http';
 import {
   Users,
   Search,
@@ -19,6 +20,8 @@ import {
   CheckCircle2,
   Download,
   Check,
+  Eye,
+  AlertCircle,
 } from 'lucide-react';
 
 export const ApplicantsListPage: React.FC = () => {
@@ -38,6 +41,31 @@ export const ApplicantsListPage: React.FC = () => {
   const [updateSaved, setUpdateSaved] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  // Resume actions
+  const [resumeAction, setResumeAction] = useState<'idle' | 'preview' | 'download'>('idle');
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  const [isResumeLoading, setIsResumeLoading] = useState(false);
+
+  const handleResumeAction = async (action: 'preview' | 'download') => {
+    if (!selectedApp?.resumeUrl) {
+      setResumeError('No resume file available for this candidate.');
+      return;
+    }
+    setResumeAction(action);
+    setIsResumeLoading(true);
+    setResumeError(null);
+    try {
+      // Stream the stored file through the authenticated API
+      await downloadAuthenticated(selectedApp.resumeUrl, selectedApp.resumeFileName || 'resume.pdf');
+    } catch (err) {
+      console.error(`Failed to ${action} resume`, err);
+      const apiError = err as { message?: string };
+      setResumeError(apiError.message ?? `Could not ${action} the resume file.`);
+    } finally {
+      setIsResumeLoading(false);
+      setResumeAction('idle');
+    }
+  };
 
   const fetchApplicants = async () => {
     setIsLoading(true);
@@ -282,9 +310,43 @@ export const ApplicantsListPage: React.FC = () => {
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">Resume Document</span>
-                <span className="text-blue-600 font-medium truncate block">
-                  {selectedApp.resumeFileName}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-slate-900 font-medium truncate flex-1">
+                    {selectedApp.resumeFileName}
+                  </span>
+                  {selectedApp.resumeUrl && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleResumeAction('preview')}
+                        disabled={isResumeLoading}
+                        title="Preview resume (opens in new tab)"
+                        className="h-7 px-2"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleResumeAction('download')}
+                        disabled={isResumeLoading}
+                        title="Download resume"
+                        className="h-7 px-2"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {resumeError && (
+                  <div className="mt-1.5 p-2 text-[11px] text-rose-600 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{resumeError}</span>
+                  </div>
+                )}
               </div>
             </div>
 
