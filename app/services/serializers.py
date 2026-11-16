@@ -1,3 +1,4 @@
+
 """ORM -> API response serializers.
 
 Keeping this in one module guarantees the same field names and derived values
@@ -212,14 +213,22 @@ def serialize_application(
         company_name=company.name,
         company_logo=company.logo,
         candidate_id=candidate_user.id,
-        candidate_name=(profile.full_name if profile and profile.full_name else candidate_user.email),
+        candidate_name=(
+            profile.full_name
+            if profile and profile.full_name
+            else candidate_user.email
+        ),
         candidate_email=candidate_user.email,
         # Contact details and internal notes are recruiter-only: a candidate
         # reading their own application does not need (and does not get) their
         # own data echoed back through a path intended for reviewers.
-        candidate_phone=(profile.phone if include_recruiter_fields and profile else None),
-        candidate_headline=(profile.headline if profile else None),
-        resume_file_name=application.resume_filename or (resume.filename if resume else None),
+        candidate_phone=(
+            profile.phone if include_recruiter_fields and profile else None
+        ),
+        candidate_headline=profile.headline if profile else None,
+        resume_file_name=(
+            application.resume_filename or (resume.filename if resume else None)
+        ),
         resume_size=human_size(resume.size_bytes) if resume else None,
         resume_download_url=(
             f"/api/v1/candidates/me/resume/{resume.id}" if resume else None

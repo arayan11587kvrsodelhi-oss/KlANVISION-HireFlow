@@ -221,7 +221,14 @@ export const http = {
 
 /** Build an absolute URL to an API path (used for authenticated downloads). */
 export function apiUrl(path: string): string {
-  return `${API_BASE_URL}${path}`;
+  // If path already includes the API prefix, don't duplicate it.
+  // This handles both relative paths from the frontend and absolute paths from the backend.
+  const base = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (normalizedPath.startsWith(base)) {
+    return normalizedPath;
+  }
+  return `${API_BASE_URL}${normalizedPath}`;
 }
 
 /**
