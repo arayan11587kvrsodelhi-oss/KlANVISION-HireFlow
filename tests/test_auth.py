@@ -211,7 +211,11 @@ def test_refresh_rotates_token_and_old_cookie_is_rejected(client, register_user)
     assert new_cookie and new_cookie != first_cookie
 
     # Replaying the consumed token is treated as theft and kills the family.
-    replay = client.post("/api/v1/auth/refresh", cookies={"hireflow_refresh": first_cookie})
+    # The consumed token is therefore restored explicitly to the client cookie
+    # jar, so the next request sends it as a replay. (Starlette deprecates
+    # per-request `cookies=`, so the jar is the supported way to set it.)
+    client.cookies.set("hireflow_refresh", first_cookie)
+    replay = client.post("/api/v1/auth/refresh")
     assert replay.status_code == 401
 
     # The family is now revoked, so even the newest cookie is dead.
@@ -224,7 +228,8 @@ def test_refresh_without_cookie_is_unauthorised(client):
 
 
 def test_refresh_with_forged_cookie_is_unauthorised(client):
-    response = client.post("/api/v1/auth/refresh", cookies={"hireflow_refresh": "forged-token-value"})
+    client.cookies.set("hireflow_refresh", "forged-token-value")
+    response = client.post("/api/v1/auth/refresh")
     assert response.status_code == 401
 
 

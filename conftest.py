@@ -204,7 +204,15 @@ def client(engine: Engine) -> Iterator[TestClient]:
     finally:
         app.dependency_overrides.clear()
         limiter.reset()
-        transaction.rollback()
+        # A test may have ended the outer transaction indirectly: a failed
+        # ``commit()`` on a session bound to this connection closes the session,
+        # which makes SQLAlchemy deassociate (and roll back) our transaction.
+        # Rolling back an already-inactive transaction is what emitted
+        # "transaction already deassociated from connection"; only roll back if
+        # it is still ours to end. The connection close below discards whatever
+        # uncommitted state remains either way, so isolation is unchanged.
+        if transaction.is_active:
+            transaction.rollback()
         connection.close()
 
 

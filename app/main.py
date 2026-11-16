@@ -98,7 +98,7 @@ def create_app() -> FastAPI:
             for err in exc.errors()
         ]
         return _error(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Request validation failed",
             "validation_error",
             errors=errors,
