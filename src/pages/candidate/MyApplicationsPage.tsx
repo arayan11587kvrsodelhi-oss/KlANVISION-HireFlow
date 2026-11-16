@@ -196,33 +196,38 @@ export const MyApplicationsPage: React.FC = () => {
                 <div className="pt-2">
                   <div className="grid grid-cols-5 gap-2">
                     {(() => {
-                      const currentStageIdx = PIPELINE_STAGES.reduce(
-                        (acc, s, i) => (s.status === app.status ? i : acc),
-                        0
-                      );
                       const isRejected = app.status === 'Rejected';
+
+                      // Rejected is a terminal branch off the funnel, not a step
+                      // in it. It has no calculable position, so no stage is
+                      // marked as reached: every stage reads as not-progressed
+                      // and the banner below explains the stop. Only stages the
+                      // record proves were reached are ever shown as complete.
+                      const currentStageIdx = isRejected
+                        ? -1
+                        : PIPELINE_STAGES.reduce(
+                            (acc, s, i) => (s.status === app.status ? i : acc),
+                            -1
+                          );
+
                       return PIPELINE_STAGES.map((stage, idx) => {
                         const isComplete = idx < currentStageIdx;
-                        const isCurrent = idx === currentStageIdx && !isRejected;
-                        const isUpcoming = idx > currentStageIdx && !isRejected;
+                        const isCurrent = idx === currentStageIdx;
+                        const isUpcoming = idx > currentStageIdx;
 
                         const barColor = isRejected
-                          ? 'bg-rose-200'
+                          ? 'bg-slate-200'
                           : isCurrent
                           ? 'bg-gradient-to-r from-blue-600 to-blue-500 ring-2 ring-blue-500/30'
                           : isComplete
                           ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
                           : 'bg-slate-200';
 
-                        const labelColor = isRejected
-                          ? 'text-rose-500'
-                          : isCurrent
+                        const labelColor = isCurrent
                           ? 'text-blue-600 font-bold'
                           : isComplete
                           ? 'text-emerald-600'
-                          : isUpcoming
-                          ? 'text-slate-400'
-                          : 'text-slate-500';
+                          : 'text-slate-400';
 
                         return (
                           <div key={stage.label} className="space-y-1.5">
@@ -231,8 +236,6 @@ export const MyApplicationsPage: React.FC = () => {
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                               ) : isCurrent ? (
                                 <Circle className="w-3.5 h-3.5 text-blue-600 fill-blue-100 shrink-0" />
-                              ) : isRejected && idx === currentStageIdx ? (
-                                <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                               ) : (
                                 <Circle className="w-3.5 h-3.5 text-slate-300 shrink-0" />
                               )}
@@ -247,9 +250,11 @@ export const MyApplicationsPage: React.FC = () => {
                     })()}
                   </div>
                   {app.status === 'Rejected' && (
-                    <p className="text-[11px] text-rose-500 mt-2 font-medium">
-                      This application was not selected. The pipeline above is paused at its last
-                      active stage.
+                    <p className="text-[11px] text-rose-600 mt-2 font-medium flex items-center gap-1.5">
+                      <XCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        This application is closed: the hiring team marked it not selected.
+                      </span>
                     </p>
                   )}
                 </div>

@@ -27,7 +27,7 @@ from app.schemas.user import (
     Token,
 )
 from app.security import cookies
-from app.security.deps import CurrentUserDep, DbSession
+from app.security.deps import CurrentUserDep, DbSession, _extract_bearer_token
 from app.security.errors import AuthError
 from app.security.rate_limit import client_ip, enforce_auth_rate_limit
 from app.services import auth as auth_service
@@ -136,16 +136,62 @@ def refresh(request: Request, response: Response, db: DbSession) -> Token:
 
 @router.post("/logout", response_model=MessageResponse, summary="Sign out")
 def logout(request: Request, response: Response, db: DbSession) -> MessageResponse:
+    """Sign out the caller's session(s).
+
+    Two independent credentials can represent a session here:
+
+    * the refresh cookie, which is what keeps the session renewable, and
+    * the Bearer access token, whose ``sid`` claim names the session family.
+
+    Revoking only via the cookie (the previous behaviour) left a live access
+    token behind whenever the cookie was absent - a client that cleared cookies,
+    or any caller that sent only the Authorization header. The access token's
+    ``sid`` is therefore used as a second, independent revocation source.
+
+    If both are present and name *different* sessions, both are revoked: a
+    logout must never leave one of the caller's own sessions usable.
+
+    The ``sid`` is only ever taken from a token whose signature, issuer and
+    expiry :func:`decode_access_token` has already verified - it is a claim
+    read from a validated token, never a caller-supplied session id.
+    """
     from app.security.middleware import enforce_same_origin
 
     enforce_same_origin(request, settings.CORS_ORIGINS)
 
     raw_token = request.cookies.get(settings.REFRESH_COOKIE_NAME)
+    cookie_family = (
+        session_service.family_id_for_raw(db, raw_token) if raw_token else None
+    )
+
+    bearer_family = None
+    bearer = _extract_bearer_token(request)
+    if bearer:
+        payload = auth_service.decode_access_token(bearer)
+        if payload is not None:
+            sid = payload.get("sid")
+            # Only a string sid from a *verified* token is considered; the
+            # ownership check below stops a token naming someone else's family.
+            if isinstance(sid, str) and sid:
+                owns = session_service.session_family_belongs_to(
+                    db, sid, payload["sub"]
+                )
+                if owns:
+                    bearer_family = sid
+
+    revoked = False
     if raw_token:
         session_service.revoke_token_by_raw(db, raw_token)
+        revoked = revoked or cookie_family is not None
+    if bearer_family and bearer_family != cookie_family:
+        session_service.revoke_family(db, bearer_family)
+        revoked = True
+
+    if revoked:
         db.commit()
     cookies.clear_refresh_cookie(response)
-    # Idempotent by design: signing out twice is not an error.
+    # Idempotent by design: signing out twice, or without a session, is not an
+    # error and must not disclose whether a session existed.
     return MessageResponse(message="Signed out")
 
 

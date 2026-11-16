@@ -75,6 +75,40 @@ def revoke_family(db: Session, family_id: str) -> None:
     )
 
 
+def family_id_for_raw(db: Session, raw_token: str) -> Optional[str]:
+    """Return the session family owning ``raw_token``, or None if unknown.
+
+    Read-only lookup used by logout to learn which family the cookie refers to
+    without performing the revocation itself.
+    """
+    if not raw_token:
+        return None
+    digest = auth_service.hash_refresh_token(raw_token)
+    return db.execute(
+        select(RefreshToken.family_id).where(RefreshToken.token_hash == digest)
+    ).scalar_one_or_none()
+
+
+def session_family_belongs_to(db: Session, family_id: str, user_id: str) -> bool:
+    """True when ``family_id`` is a session belonging to ``user_id``.
+
+    Guards logout against an access token that names a family it does not own:
+    the ``sid`` claim is attacker-influenced in the sense that any signed token
+    carries one, so ownership is re-proved from the database rather than assumed.
+    """
+    return (
+        db.execute(
+            select(RefreshToken.id)
+            .where(
+                RefreshToken.family_id == family_id,
+                RefreshToken.user_id == user_id,
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+        is not None
+    )
+
+
 def revoke_token_by_raw(db: Session, raw_token: str) -> None:
     """Revoke the session that owns ``raw_token``, if any. Idempotent."""
     if not raw_token:

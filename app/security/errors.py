@@ -54,7 +54,7 @@ class ValidationError(HTTPException):
     """422 - request understood but semantically invalid."""
 
     def __init__(self, detail: str = "Invalid request"):
-        super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+        super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=detail)
         self.code = "validation_error"
 
 

@@ -199,7 +199,10 @@ def test_suspended_account_cannot_log_in(client, app_session, register_user):
 # Refresh / logout
 # ---------------------------------------------------------------------------
 
-def test_refresh_rotates_token_and_old_cookie_is_rejected(client, register_user):
+def test_refresh_rotates_token_and_old_cookie_is_rejected(secure_client, register_user):
+    # `secure_client` speaks HTTPS so the (Secure) refresh cookie round-trips;
+    # the cookie policy itself is unchanged.
+    client = secure_client
     _, email, password = register_user("candidate")
     first = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     first_cookie = first.cookies.get("hireflow_refresh")
@@ -211,7 +214,11 @@ def test_refresh_rotates_token_and_old_cookie_is_rejected(client, register_user)
     assert new_cookie and new_cookie != first_cookie
 
     # Replaying the consumed token is treated as theft and kills the family.
-    replay = client.post("/api/v1/auth/refresh", cookies={"hireflow_refresh": first_cookie})
+    # The consumed token is therefore restored explicitly to the client cookie
+    # jar, so the next request sends it as a replay. (Starlette deprecates
+    # per-request `cookies=`, so the jar is the supported way to set it.)
+    client.cookies.set("hireflow_refresh", first_cookie)
+    replay = client.post("/api/v1/auth/refresh")
     assert replay.status_code == 401
 
     # The family is now revoked, so even the newest cookie is dead.
@@ -224,11 +231,13 @@ def test_refresh_without_cookie_is_unauthorised(client):
 
 
 def test_refresh_with_forged_cookie_is_unauthorised(client):
-    response = client.post("/api/v1/auth/refresh", cookies={"hireflow_refresh": "forged-token-value"})
+    client.cookies.set("hireflow_refresh", "forged-token-value")
+    response = client.post("/api/v1/auth/refresh")
     assert response.status_code == 401
 
 
-def test_logout_clears_cookie_and_revokes_session(client, register_user):
+def test_logout_clears_cookie_and_revokes_session(secure_client, register_user):
+    client = secure_client
     _, email, password = register_user("candidate")
     login = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
@@ -246,8 +255,9 @@ def test_logout_is_idempotent_and_works_without_session(client):
     assert client.post("/api/v1/auth/logout").status_code == 200
 
 
-def test_refresh_rejects_cross_site_origin(client, register_user):
+def test_refresh_rejects_cross_site_origin(secure_client, register_user):
     """The cookie-backed endpoint refuses requests from foreign origins."""
+    client = secure_client
     _, email, password = register_user("candidate")
     client.post("/api/v1/auth/login", json={"email": email, "password": password})
 
@@ -258,7 +268,8 @@ def test_refresh_rejects_cross_site_origin(client, register_user):
     assert allowed.status_code == 200
 
 
-def test_logout_rejects_cross_site_origin(client, register_user):
+def test_logout_rejects_cross_site_origin(secure_client, register_user):
+    client = secure_client
     _, email, password = register_user("candidate")
     client.post("/api/v1/auth/login", json={"email": email, "password": password})
     response = client.post("/api/v1/auth/logout", headers={"Origin": "https://evil.example"})

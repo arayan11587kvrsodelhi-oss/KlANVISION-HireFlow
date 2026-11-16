@@ -467,7 +467,10 @@ def test_token_role_claim_cannot_escalate_privileges(client, candidate_a):
     assert response.status_code == 403
 
 
-def test_logout_invalidates_outstanding_access_token(client, register_user, login):
+def test_logout_invalidates_outstanding_access_token(secure_client, register_user, login):
+    # HTTPS transport so the refresh cookie is actually presented at logout;
+    # the assertion below is unchanged.
+    client = secure_client
     _, email, password = register_user("candidate")
     headers = login(email, password)
     assert client.get("/api/v1/auth/me", headers=headers).status_code == 200

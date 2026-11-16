@@ -136,7 +136,10 @@ def test_cross_site_origin_cannot_use_the_refresh_cookie(client, register_user):
     assert response.status_code == 403
 
 
-def test_same_site_origin_may_refresh(client, register_user):
+def test_same_site_origin_may_refresh(secure_client, register_user):
+    # HTTPS transport: the Secure refresh cookie must actually be sent for the
+    # same-origin case to reach its 200 assertion.
+    client = secure_client
     _, email, password = register_user("candidate")
     client.post("/api/v1/auth/login", json={"email": email, "password": password})
     response = client.post("/api/v1/auth/refresh", headers={"Origin": "http://localhost:3000"})
