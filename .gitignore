@@ -41,3 +41,8 @@ tsc_output.txt
 e2e/debug-*.mjs
 
 e2e/*.png
+
+# Local artifacts at the repository root only - deliberately anchored so these
+# rules cannot swallow real files elsewhere in the tree.
+/test_output.txt
+/hireflow_test_backup.dump
